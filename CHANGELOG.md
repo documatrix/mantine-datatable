@@ -3,6 +3,66 @@
 The following is a list of notable changes to the Mantine DataTable component.  
 Minor versions that are not listed in the changelog are bug fixes and small improvements.
 
+## 0.1.0 (2026-08-01)
+
+
+### Features
+
+* add multilevel-column-grouping ([3a77c7a](https://github.com/documatrix/mantine-datatable/commit/3a77c7a993459f2b726ff41266a76363b382539b))
+* add RTL support for page size selector button icon ([f184223](https://github.com/documatrix/mantine-datatable/commit/f1842232010873325122d4c6a2d048e80d564079))
+* add RTL support for page size selector button icon ([7213675](https://github.com/documatrix/mantine-datatable/commit/72136755fea0a636f40b9db5a52bd98a052ad15d))
+* add RTL support for resizable header handle ([2c16397](https://github.com/documatrix/mantine-datatable/commit/2c16397a9ec37a57b770b80e574f1f088427e8dc))
+* Added a 'filterPopoverDisableClickOutside' prop to disable the ([4590569](https://github.com/documatrix/mantine-datatable/commit/45905692690e7be888c3c6c7f031bf27aed42e07))
+* adds resizable columns ([6b9beea](https://github.com/documatrix/mantine-datatable/commit/6b9beeacca40037d160711d6d0b568ef4fe85643))
+* Arbitrary columns pinning ([4b7b02d](https://github.com/documatrix/mantine-datatable/commit/4b7b02d9ddbb9ef02eac3dff4330eceab265da4f))
+* pagination position ([3d83701](https://github.com/documatrix/mantine-datatable/commit/3d83701b1155f9dad9f146a02f22f5f4a8e51924))
+* pagination position ([67f5c2c](https://github.com/documatrix/mantine-datatable/commit/67f5c2ca056dd4667a9c5a711478a8f8e034c094))
+* rebrand fork, migrate to bun, automate releases ([45eca48](https://github.com/documatrix/mantine-datatable/commit/45eca488b5b016a1a553ebd15749156f7bd22dbe))
+* reduce re-renders ([d380ecd](https://github.com/documatrix/mantine-datatable/commit/d380ecd8487fe344dbb70bd696d8f2a8935e4e98))
+
+
+### Bug Fixes
+
+* 457 ([e6e84ab](https://github.com/documatrix/mantine-datatable/commit/e6e84ab726462138e556683b5798fce66762f96e))
+* 481 & update searching & filtering example ([35fbc0c](https://github.com/documatrix/mantine-datatable/commit/35fbc0ce66658755044324091ffd2b93b4e005aa))
+* 500 (relax the sortIcons type) ([c215b9c](https://github.com/documatrix/mantine-datatable/commit/c215b9c47cfa405bc65ea2b62d994cc6172417ab))
+* 501 ([3543fef](https://github.com/documatrix/mantine-datatable/commit/3543fef6a3dfb2b77b94854cf4c48c8f6c3acc8b))
+* 508 ([b435929](https://github.com/documatrix/mantine-datatable/commit/b435929486baf064a794f6fc972009e391333280))
+* 520 (Arrow visible in records per page component) ([16d63a8](https://github.com/documatrix/mantine-datatable/commit/16d63a8342a6b37b9396bb76431730f47f65b82d))
+* 553 ([4871c67](https://github.com/documatrix/mantine-datatable/commit/4871c6707087c39dd1d57c6e2891189fea1f004d))
+* 570 - Update all Text components to output divs instead of paragraphs ([27e84aa](https://github.com/documatrix/mantine-datatable/commit/27e84aa81ccd0ad8ee051b52a54f6efc75fd0944))
+* 588 ([3ff2b96](https://github.com/documatrix/mantine-datatable/commit/3ff2b96ecb72d5a15435e62c699acf6cb101dc63))
+* 614 ([9a9561e](https://github.com/documatrix/mantine-datatable/commit/9a9561e735aeb3f83d02fe27a2fbcad03f00f94e))
+* 627 ([2eca02f](https://github.com/documatrix/mantine-datatable/commit/2eca02fee4e0438db18927b8f7868e1fc48827cd))
+* 645 ([a3fa790](https://github.com/documatrix/mantine-datatable/commit/a3fa79080945c948856c3c08adf99b154662f7b3))
+* 659 ([0d0bd0a](https://github.com/documatrix/mantine-datatable/commit/0d0bd0af4c9239236d81cc7852952738f03a0606))
+* 663:  Remove pointerEvents: none on empty state ([aa7eb58](https://github.com/documatrix/mantine-datatable/commit/aa7eb58968c58ec1dc7bc3dbab4530e5686771d0))
+* 682 - Request to remove CSS source maps from the dist ([f49fbc1](https://github.com/documatrix/mantine-datatable/commit/f49fbc13e7bc17c3ae8f43e36263a013d6701fed))
+* 698 (first column header not pinned when using row selection) ([51e16f7](https://github.com/documatrix/mantine-datatable/commit/51e16f7096478cd4f233ee0a175ff940c54ceff8))
+* 700 - Hydration error in row dragging example ([322cb80](https://github.com/documatrix/mantine-datatable/commit/322cb80b3eea508b43068f85853605a3ec3e535d))
+* 743 ([3176a98](https://github.com/documatrix/mantine-datatable/commit/3176a98e57f46277d8a8d2b92f527fcb5a296d59))
+* 753 ([8426fbb](https://github.com/documatrix/mantine-datatable/commit/8426fbb448d24b61c779b8bbce4d3494e83897e1))
+* 763 - column pinning breaks layouting on latest version (regression in 8.3.6) ([3d403d1](https://github.com/documatrix/mantine-datatable/commit/3d403d1b513ce8955f281a31afff3cfdb82a3614))
+* 764 - Bug in docs website ([65612a4](https://github.com/documatrix/mantine-datatable/commit/65612a45b724afbd674f937b4b6b12351ec69154))
+* context menu event intercepted on header even when columns are not toggleable ([943f172](https://github.com/documatrix/mantine-datatable/commit/943f172dfa5f7926181742abc966c41ab4f3cc2c))
+* guard against malformed persisted column state ([#818](https://github.com/documatrix/mantine-datatable/issues/818)) ([a384bfe](https://github.com/documatrix/mantine-datatable/commit/a384bfe870385b1f0252594071f99ce1f64c4eb0))
+* guard against malformed persisted column state ([#818](https://github.com/documatrix/mantine-datatable/issues/818)) ([6ee2ba2](https://github.com/documatrix/mantine-datatable/commit/6ee2ba2efd5bf5732d310e563022d4791fc7b47e))
+* move pinned column z-index from inline styles to CSS custom property ([d7c7772](https://github.com/documatrix/mantine-datatable/commit/d7c777208f005b1716fea7c9dcca3330cecc2e2e))
+* Prevent sorting from being triggered when using filter popovers with keyboard input ([61964b5](https://github.com/documatrix/mantine-datatable/commit/61964b54b77ae4151f06f44e91a52171bb1462e1))
+* Unhandled Runtime Error ([4e79737](https://github.com/documatrix/mantine-datatable/commit/4e797376842fb8f8f34618cdd6645bf31277127f))
+* Unhandled Runtime Error ([055377f](https://github.com/documatrix/mantine-datatable/commit/055377f1089e0a0636f7b015274da7bbadc1a1b3))
+* use 0 for 0px ([68d39cc](https://github.com/documatrix/mantine-datatable/commit/68d39cce484818208d866c80314e82b6ca00a396))
+
+
+### Reverts
+
+* 603 ([5527ef4](https://github.com/documatrix/mantine-datatable/commit/5527ef44c80b9e133e34f7e77fafdfde45728b3d))
+
+
+### Miscellaneous Chores
+
+* bootstrap release versioning at 0.1.0 ([00768f6](https://github.com/documatrix/mantine-datatable/commit/00768f639f85ecd5eabd201444b10b398c39c6ff))
+
 ## 9.4.0 (2026-07-15)
 
 - Update dev deps to ensure compatibility with Mantine 9.4.0
