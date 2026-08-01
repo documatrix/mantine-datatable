@@ -2,8 +2,9 @@
 namespace NodeJS {
   interface ProcessEnv extends NodeJS.ProcessEnv {
     GITHUB_PAGES: 'TRUE' | 'FALSE';
-    PACKAGE_NAME: 'mantine-datatable';
+    PACKAGE_NAME: '@neeyo/mantine-datatable';
     PACKAGE_VERSION: string;
+    REPO_NAME: 'mantine-datatable';
     INITIAL_NPM_DOWNLOADS: string;
   }
 }

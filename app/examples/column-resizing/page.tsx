@@ -1,8 +1,7 @@
 import { Code } from '@mantine/core';
 import type { Route } from 'next';
-import { PRODUCT_NAME, REPO_LINK } from '~/app/config';
+import { PRODUCT_NAME } from '~/app/config';
 import { CodeBlock } from '~/components/CodeBlock';
-import { ExternalLink } from '~/components/ExternalLink';
 import { PageNavigation } from '~/components/PageNavigation';
 import { PageSubtitle } from '~/components/PageSubtitle';
 import { PageTitle } from '~/components/PageTitle';
@@ -27,9 +26,7 @@ export default async function DraggingExamplePage() {
     <>
       <PageTitle of={PATH} />
       <Txt>
-        Starting with <Code>v7.3.1</Code>, {PRODUCT_NAME} supports column toggling and drag-and-drop reordering, thanks
-        to the <ExternalLink to={`${REPO_LINK}/pull/490`}>outstanding work</ExternalLink> of{' '}
-        <ExternalLink to="https://github.com/gfazioli">Giovambattista Fazioli</ExternalLink>.
+        Starting with <Code>v7.3.1</Code>, {PRODUCT_NAME} supports column resizing.
       </Txt>
       <ResizingExample />
       <Txt>

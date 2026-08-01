@@ -23,12 +23,9 @@ export default async function LinksOrButtonsInsideClickableRowsOrCellsExamplePag
       <Txt>
         If you need to add links, buttons or any kind of clickable components inside clickable{' '}
         <InternalLink to="/examples/handling-row-clicks">clickable rows</InternalLink>,{' '}
-        <InternalLink to="/examples/handling-cell-clicks">clickable cells</InternalLink>,{' '}
-        <InternalLink to="/examples/expanding-rows">expandable rows</InternalLink> or{' '}
-        <InternalLink to="/examples/using-with-mantine-contextmenu">
-          row context-menus triggered by <Code>click</Code> instead of <Code>right-click</Code>
-        </InternalLink>
-        , make sure to intercept the <Code>click</Code> event on the clickable components and{' '}
+        <InternalLink to="/examples/handling-cell-clicks">clickable cells</InternalLink> or{' '}
+        <InternalLink to="/examples/expanding-rows">expandable rows</InternalLink>, make sure to intercept the{' '}
+        <Code>click</Code> event on the clickable components and{' '}
         <ExternalLink to="https://developer.mozilla.org/en-US/docs/Web/API/Event/stopPropagation">
           invoke its <Code>.stopPropagation()</Code> method
         </ExternalLink>

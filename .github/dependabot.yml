@@ -5,3 +5,5 @@ updates:
     target-branch: 'main'
     schedule:
       interval: weekly
+    assignees:
+      - lukasbash

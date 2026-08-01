@@ -1,13 +1,11 @@
 'use client';
 
 import { DataTable, useDataTableColumns } from '__PACKAGE__';
+import { Button, Group } from '@mantine/core';
 import { IconColumnRemove, IconColumns3 } from '@tabler/icons-react';
-import { useContextMenu } from 'mantine-contextmenu';
 import { companies } from '~/data';
 
 export default function DraggingTogglingResetExample() {
-  const { showContextMenu } = useContextMenu();
-
   const key = 'toggleable-reset-example';
 
   const { effectiveColumns, resetColumnsOrder, resetColumnsToggle } = useDataTableColumns({
@@ -21,26 +19,22 @@ export default function DraggingTogglingResetExample() {
   });
 
   return (
-    <DataTable
-      withTableBorder
-      withColumnBorders
-      storeColumnsKey={key}
-      records={companies}
-      columns={effectiveColumns}
-      onRowContextMenu={({ event }) =>
-        showContextMenu([
-          {
-            key: 'reset-toggled-columns',
-            icon: <IconColumnRemove size={16} />,
-            onClick: resetColumnsToggle,
-          },
-          {
-            key: 'reset-columns-order',
-            icon: <IconColumns3 size={16} />,
-            onClick: resetColumnsOrder,
-          },
-        ])(event)
-      }
-    />
+    <>
+      <DataTable
+        withTableBorder
+        withColumnBorders
+        storeColumnsKey={key}
+        records={companies}
+        columns={effectiveColumns}
+      />
+      <Group mt="md" justify="center">
+        <Button variant="default" leftSection={<IconColumnRemove size={16} />} onClick={resetColumnsToggle}>
+          Reset toggled columns
+        </Button>
+        <Button variant="default" leftSection={<IconColumns3 size={16} />} onClick={resetColumnsOrder}>
+          Reset columns order
+        </Button>
+      </Group>
+    </>
   );
 }

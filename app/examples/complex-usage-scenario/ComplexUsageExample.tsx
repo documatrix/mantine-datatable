@@ -6,10 +6,9 @@ import type { MantineTheme } from '@mantine/core';
 import { ActionIcon, Button, Center, Flex, Group, Image, rem, Text, TextInput } from '@mantine/core';
 import { closeAllModals, openModal } from '@mantine/modals';
 import { showNotification } from '@mantine/notifications';
-import { IconClick, IconEdit, IconMessage, IconTrash, IconTrashX } from '@tabler/icons-react';
+import { IconClick, IconEdit, IconMessage, IconTrashX } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { useContextMenu } from 'mantine-contextmenu';
 import { useCallback, useState } from 'react';
 import type { Employee } from '~/data';
 import { getEmployeesAsync } from '~/data/async';
@@ -18,8 +17,6 @@ import classes from './ComplexUsageExample.module.css';
 const PAGE_SIZE = 100;
 
 export function ComplexUsageExample() {
-  const { showContextMenu, hideContextMenu } = useContextMenu();
-
   const [page, setPage] = useState(1);
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Employee>>({
     columnAccessor: 'name',
@@ -54,15 +51,6 @@ export function ComplexUsageExample() {
       message: `Should delete ${firstName} ${lastName}, but we're not going to, because this is just a demo`,
     });
   }, []);
-
-  const deleteSelectedRecords = useCallback(() => {
-    showNotification({
-      withBorder: true,
-      color: 'red',
-      title: 'Deleting multiple records',
-      message: `Should delete ${selectedRecords.length} records, but we're not going to do that because deleting data is bad... and this is just a demo anyway`,
-    });
-  }, [selectedRecords.length]);
 
   const sendMessage = useCallback(({ firstName, lastName }: Employee) => {
     showNotification({
@@ -118,6 +106,17 @@ export function ComplexUsageExample() {
       >
         <IconEdit size={16} />
       </ActionIcon>
+      <ActionIcon
+        size="sm"
+        variant="transparent"
+        color="red"
+        onClick={(e) => {
+          e.stopPropagation(); // 👈 prevent triggering the row click function
+          deleteRecord(record);
+        }}
+      >
+        <IconTrashX size={16} />
+      </ActionIcon>
     </Group>
   );
 
@@ -142,32 +141,6 @@ export function ComplexUsageExample() {
       </Flex>
     ),
   };
-
-  const handleContextMenu: DataTableProps<Employee>['onRowContextMenu'] = ({ record, event }) =>
-    showContextMenu([
-      {
-        key: 'edit',
-        icon: <IconEdit size={14} />,
-        title: `Edit ${record.firstName} ${record.lastName}`,
-        onClick: () => editRecord(record),
-      },
-      {
-        key: 'delete',
-        title: `Delete ${record.firstName} ${record.lastName}`,
-        icon: <IconTrashX size={14} />,
-        color: 'red',
-        onClick: () => deleteRecord(record),
-      },
-      { key: 'divider' },
-      {
-        key: 'deleteMany',
-        hidden: selectedRecords.length <= 1 || !selectedRecords.map((r) => r.id).includes(record.id),
-        title: `Delete ${selectedRecords.length} selected records`,
-        icon: <IconTrash size={14} />,
-        color: 'red',
-        onClick: deleteSelectedRecords,
-      },
-    ])(event);
 
   const now = dayjs();
   const aboveXs = (theme: MantineTheme) => `(min-width: ${theme.breakpoints.xs})`;
@@ -251,8 +224,6 @@ export function ComplexUsageExample() {
       selectedRecords={selectedRecords}
       onSelectedRecordsChange={setSelectedRecords}
       rowExpansion={rowExpansion}
-      onRowContextMenu={handleContextMenu}
-      onScroll={hideContextMenu}
     />
   );
 }

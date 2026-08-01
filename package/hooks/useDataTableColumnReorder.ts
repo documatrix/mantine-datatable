@@ -5,7 +5,7 @@ import { sanitizeStoredArray } from '../utils';
 
 /**
  * Hook to handle column reordering with localStorage persistence.
- * @see https://icflorescu.github.io/mantine-datatable/examples/column-dragging-and-toggling/
+ * @see https://documatrix.github.io/mantine-datatable/examples/column-dragging-and-toggling/
  */
 export function useDataTableColumnReorder<T>({
   key,

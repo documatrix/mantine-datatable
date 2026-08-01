@@ -44,6 +44,7 @@ export default async function GettingStartedPage() {
           },
           { language: 'shell', fileName: 'npm', code: `npm i ${process.env.PACKAGE_NAME} clsx` },
           { language: 'shell', fileName: 'pnpm', code: `pnpm i ${process.env.PACKAGE_NAME} clsx` },
+          { language: 'shell', fileName: 'bun', code: `bun add ${process.env.PACKAGE_NAME} clsx` },
         ]}
       />
       <Txt>

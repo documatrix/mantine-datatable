@@ -1,15 +1,13 @@
 'use client';
 
 import { DataTable, type DataTableSortStatus, useDataTableColumns } from '__PACKAGE__';
+import { Button, Group } from '@mantine/core';
 import { IconColumnRemove, IconColumns3 } from '@tabler/icons-react';
 import sortBy from 'lodash/sortBy';
-import { useContextMenu } from 'mantine-contextmenu';
 import { useEffect, useState } from 'react';
 import { type Company, companies } from '~/data';
 
 export default function DraggingTogglingComplexExample() {
-  const { showContextMenu } = useContextMenu();
-
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Company>>({
     columnAccessor: 'name',
     direction: 'asc',
@@ -35,28 +33,24 @@ export default function DraggingTogglingComplexExample() {
   });
 
   return (
-    <DataTable
-      withTableBorder
-      withColumnBorders
-      storeColumnsKey={key}
-      records={records}
-      columns={effectiveColumns}
-      sortStatus={sortStatus}
-      onSortStatusChange={setSortStatus}
-      onRowContextMenu={({ event }) =>
-        showContextMenu([
-          {
-            key: 'reset-toggled-columns',
-            icon: <IconColumnRemove size={16} />,
-            onClick: resetColumnsToggle,
-          },
-          {
-            key: 'reset-columns-order',
-            icon: <IconColumns3 size={16} />,
-            onClick: resetColumnsOrder,
-          },
-        ])(event)
-      }
-    />
+    <>
+      <DataTable
+        withTableBorder
+        withColumnBorders
+        storeColumnsKey={key}
+        records={records}
+        columns={effectiveColumns}
+        sortStatus={sortStatus}
+        onSortStatusChange={setSortStatus}
+      />
+      <Group mt="md" justify="center">
+        <Button variant="default" leftSection={<IconColumnRemove size={16} />} onClick={resetColumnsToggle}>
+          Reset toggled columns
+        </Button>
+        <Button variant="default" leftSection={<IconColumns3 size={16} />} onClick={resetColumnsOrder}>
+          Reset columns order
+        </Button>
+      </Group>
+    </>
   );
 }

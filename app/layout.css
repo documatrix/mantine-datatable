@@ -2,10 +2,7 @@
 @import '@mantine/dates/styles.css' layer(mantine-dates);
 @import '@mantine/notifications/styles.css' layer(mantine-notifications);
 @import '@mantine/code-highlight/styles.css' layer(mantine-code-highlight);
-@import 'mantine-contextmenu/dist/styles.css' layer(mantine-contextmenu);
 @import '../package/styles.css' layer(mantine-datatable);
-@import '@docsearch/css';
-@import './docsearch-overrides.css';
 
 @layer mantine-core, mantine-notifications, mantine-code-highlight, mantine-datatable;
 

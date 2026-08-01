@@ -1,6 +1,6 @@
 import { Group, Text, useMantineTheme } from '@mantine/core';
 import type { Ref } from 'react';
-import { AUTHOR_LINK, AUTHOR_NAME, LICENSE_LINK, NPM_LINK, REPO_LINK, SPONSORS_LINK } from '~/app/config';
+import { LICENSE_LINK, NPM_LINK, REPO_LINK, REPO_OWNER } from '~/app/config';
 import { ExternalLink } from './ExternalLink';
 import classes from './Footer.module.css';
 
@@ -18,23 +18,16 @@ export function Footer({ ref }: FooterProps) {
         <ExternalLink className={classes.imageLink} to={LICENSE_LINK} rel="license">
           <img src={`https://img.shields.io/npm/l/${process.env.PACKAGE_NAME}.svg${badgeParams}`} alt="MIT License" />
         </ExternalLink>
-        <ExternalLink className={classes.imageLink} to={SPONSORS_LINK}>
-          <img
-            src={`https://img.shields.io/static/v1?label=github&message=sponsor&color=${color}`}
-            alt="Sponsor the author"
-          />
-        </ExternalLink>
       </Group>
       <Text size="sm" ta="center">
-        Built by <ExternalLink to={AUTHOR_LINK}>{AUTHOR_NAME}</ExternalLink> and{' '}
-        <ExternalLink to={`${REPO_LINK}/graphs/contributors`}>these awesome people</ExternalLink>.
+        Built by <ExternalLink to={`${REPO_LINK}/graphs/contributors`}>these awesome people</ExternalLink>.
         <br />
-        Please <ExternalLink to={SPONSORS_LINK}>sponsor my work</ExternalLink> if you find it useful.
+        Maintained to match our own feature requests and table-behavior semantics.
       </Text>
       <Group className={classes.imageLinks} gap="xs">
         <ExternalLink className={classes.imageLink} to={REPO_LINK}>
           <img
-            src={`https://img.shields.io/github/stars/icflorescu/${process.env.PACKAGE_NAME}${badgeParams}`}
+            src={`https://img.shields.io/github/stars/${REPO_OWNER}/${process.env.REPO_NAME}${badgeParams}`}
             alt="GitHub Stars"
           />
         </ExternalLink>

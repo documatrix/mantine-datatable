@@ -36,9 +36,8 @@ export default async function ComplexUsageExamplePage() {
         <InternalLink to="/examples/sorting">sorting</InternalLink>,{' '}
         <InternalLink to="/examples/pagination">pagination</InternalLink>, custom cell data rendering,{' '}
         <InternalLink to="/examples/records-selection">multiple row selection</InternalLink>,{' '}
-        <InternalLink to="/examples/expanding-rows">row expansion</InternalLink>,{' '}
-        <InternalLink to="/examples/row-actions-cell">action cells</InternalLink>, and{' '}
-        <InternalLink to="/examples/using-with-mantine-contextmenu">row context-menu</InternalLink>.
+        <InternalLink to="/examples/expanding-rows">row expansion</InternalLink>, and{' '}
+        <InternalLink to="/examples/row-actions-cell">action cells</InternalLink>.
       </Txt>
       <ComplexUsageExampleWrapper>
         <ComplexUsageExample />

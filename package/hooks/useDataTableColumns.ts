@@ -9,7 +9,7 @@ export type { DataTableColumnPinning, DataTableColumnToggle };
 
 /**
  * Hook to handle column features such as drag-and-drop reordering, visibility toggling and resizing.
- * @see https://icflorescu.github.io/mantine-datatable/examples/column-dragging-and-toggling/
+ * @see https://documatrix.github.io/mantine-datatable/examples/column-dragging-and-toggling/
  */
 export const useDataTableColumns = <T>({
   key,

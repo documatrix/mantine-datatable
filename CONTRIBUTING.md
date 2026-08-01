@@ -1,18 +1,17 @@
 # Contributing
 
-If you find a bug, please feel free to [raise an issue](https://github.com/icflorescu/mantine-datatable/issues).  
-If you have an idea about a new or missing feature, let's discuss it [here](https://github.com/icflorescu/mantine-datatable/discussions).
+This repository is a fork of the original open-source Mantine DataTable project.
+It is maintained to match **our own feature requests and semantics for how a table should behave**, so its scope is intentionally narrower than that of a general-purpose community package — please keep that in mind when proposing changes.
 
-Better yet, if you're willing to put your effort into it, coming up with a pull-request would be fantastic.  
-So many people _take open-source for granted_, but far fewer understand its true essence and are generous enough to contribute their own time and skills to a project they find useful.  
-If you're here though, you're probably one of the fewer ones.
+If you find a bug, please feel free to [raise an issue](https://github.com/documatrix/mantine-datatable/issues).
+If you have an idea about a new or missing feature, let's discuss it [here](https://github.com/documatrix/mantine-datatable/discussions) before putting significant effort into a PR.
 
 ## Things to keep in mind
 
 The repository is holding the code for both Mantine DataTable package and its documentation website.  
-Since the repo root contains a `yarn.lock` file, it **should be obvious** that you have to use [Yarn](https://yarnpkg.com/) to install dependencies and run scripts.  
-Use `yarn dev` to start the development server, `yarn lint` to check the code for linting errors, and `yarn build` to check that the code compiles.  
-Running `yarn format` will automatically format your code with [Prettier](https://prettier.io/), so that it adheres to the project’s coding style.  
+Since the repo root contains a `bun.lock` file, it **should be obvious** that you have to use [Bun](https://bun.sh/) to install dependencies and run scripts.  
+Use `bun run dev` to start the development server, `bun run lint` to check the code for linting errors, and `bun run build` to check that the code compiles.  
+Running `bun run format` will automatically format your code with [Biome](https://biomejs.dev/), so that it adheres to the project’s coding style.  
 This is a [Next.js](https://nextjs.org/) project with an [app router](https://nextjs.org/docs/app/building-your-application/routing) and makes use of [React Server Components]().  
 **Make sure you have a good grasp of the above before attempting to contribute.**
 
@@ -21,11 +20,5 @@ The `components` folder holds generic React components used by the documentation
 If you want to implement a new feature or improve an existing one, make sure to add an example page and/or alter the one(s) already referring to it.  
 It’s not a feature if other people don’t know about it or don’t understand how to use it.
 
-**Please target your PRs to the `next` branch.**
-Pushing to the `main` branch triggers the GitHub deployment workflow, so PRs targeting `main` will be rejected.
-
-## Code contributors
-
-Here's a list of all the people who have contributed to the codebase of this project so far:
-
-[![Contributors list](https://contrib.rocks/image?repo=icflorescu/mantine-datatable)](https://github.com/icflorescu/mantine-datatable/graphs/contributors)
+**Please target your PRs to the `main` branch and use [Conventional Commits](https://www.conventionalcommits.org/) in your PR titles** (e.g. `feat: ...`, `fix: ...`) — releases are automated with [release-please](https://github.com/googleapis/release-please), which derives version bumps and the changelog from them.
+Merging into `main` does not release anything by itself: release-please maintains a rolling release PR, and merging *that* PR cuts the GitHub release, publishes to npm and deploys the docs. `main` may therefore be ahead of the latest released version.

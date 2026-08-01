@@ -47,7 +47,6 @@ export default function HomePage() {
           <InternalLink to="/examples/records-selection">rows selection</InternalLink>, column{' '}
           <InternalLink to="/examples/sorting">sorting</InternalLink>, custom{' '}
           <InternalLink to="/examples/column-properties-and-styling">cell data rendering</InternalLink>,{' '}
-          <InternalLink to="/examples/using-with-mantine-contextmenu">context menus</InternalLink>,{' '}
           <InternalLink to="/examples/expanding-rows">row expansion</InternalLink>,{' '}
           <InternalLink to="/examples/nested-tables">nesting</InternalLink>,{' '}
           <InternalLink to="/examples/row-dragging">drag-and-drop reordering support</InternalLink> and{' '}

@@ -12,7 +12,7 @@ export type DataTableColumnToggle = {
 
 /**
  * Hook to handle column visibility toggling with localStorage persistence.
- * @see https://icflorescu.github.io/mantine-datatable/examples/column-dragging-and-toggling/
+ * @see https://documatrix.github.io/mantine-datatable/examples/column-dragging-and-toggling/
  */
 export function useDataTableColumnToggle<T>({
   key,

@@ -13,12 +13,12 @@ This is a dual-purpose repository containing both the **Mantine DataTable** comp
 ### Package Development Flow
 
 ```bash
-# Core development commands (use pnpm, not yarn despite legacy docs)
-pnpm dev              # Start Next.js dev server for docs/examples
-pnpm build:package    # Build package only (tsup + postcss)
-pnpm build:docs       # Build documentation site
-pnpm build            # Build both package and docs
-pnpm lint             # ESLint + TypeScript checks
+# Core development commands (use bun)
+bun run dev              # Start Next.js dev server for docs/examples
+bun run build:package    # Build package only (tsup + postcss)
+bun run build:docs       # Build documentation site
+bun run build            # Build both package and docs
+bun run lint             # Biome + TypeScript checks
 ```
 
 ### Component Architecture Pattern

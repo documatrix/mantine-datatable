@@ -33,9 +33,6 @@ export default async function DisablingTextSelectionExamplePage() {
           <InternalLink to="/examples/handling-row-clicks">handle row clicks</InternalLink>;
         </li>
         <li>
-          use <InternalLink to="/examples/using-with-mantine-contextmenu">context-menus</InternalLink> on touch devices;
-        </li>
-        <li>
           use <InternalLink to="/examples/sorting">sorting</InternalLink>.
         </li>
       </UnorderedList>

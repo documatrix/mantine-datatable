@@ -1,0 +1,42 @@
+name: Release Please
+
+on:
+  push:
+    branches: ['main']
+
+# Least privilege at the top level; jobs opt into more as needed
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create releases and tags
+      pull-requests: write # create and update the release PR
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+
+  # Releases created by release-please use the workflow's GITHUB_TOKEN, which
+  # deliberately does not trigger `release:` workflows — so publishing and docs
+  # deployment are chained here explicitly instead.
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/publish.yml
+    permissions:
+      contents: read
+      id-token: write
+
+  deploy-docs:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    uses: ./.github/workflows/deploy-docs.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

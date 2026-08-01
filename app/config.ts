@@ -1,31 +1,19 @@
 import type { MantineColor } from '@mantine/core';
 import type { Icon } from '@tabler/icons-react';
-import {
-  IconAdjustments,
-  IconBrandCss3,
-  IconHeartHandshake,
-  IconHome,
-  IconList,
-  IconQuestionMark,
-  IconRocket,
-  IconThumbUp,
-} from '@tabler/icons-react';
+import { IconAdjustments, IconBrandCss3, IconHome, IconList, IconRocket, IconThumbUp } from '@tabler/icons-react';
 import type { Route } from 'next';
 
 export const PRODUCT_NAME = 'Mantine DataTable';
 export const PRODUCT_DESCRIPTION =
-  'A fully-featured data-table/data-grid React component for building data-rich applications with Mantine UI, trusted by thousands of developers and companies around the world, from small startups to large enterprises like Microsoft';
+  'A fully-featured data-table/data-grid React component for building data-rich applications with Mantine UI, maintained as a fork focused on our own feature requests and semantics for how a table should behave';
 
-export const WEB_ROOT = 'https://icflorescu.github.io';
-export const WEBSITE_LINK = `${WEB_ROOT}/${process.env.PACKAGE_NAME}`;
-export const V6_WEBSITE_LINK = `${WEB_ROOT}/${process.env.PACKAGE_NAME}-v6`;
+export const WEB_ROOT = 'https://documatrix.github.io';
+export const WEBSITE_LINK = `${WEB_ROOT}/${process.env.REPO_NAME}`;
 
-export const AUTHOR_NAME = 'Ionut-Cristian Florescu';
-export const AUTHOR_LINK = 'https://github.com/icflorescu';
-export const REPO_LINK = `${AUTHOR_LINK}/${process.env.PACKAGE_NAME}`;
+export const REPO_OWNER = 'documatrix';
+export const REPO_LINK = `https://github.com/${REPO_OWNER}/${process.env.REPO_NAME}`;
 export const LICENSE_LINK = `${REPO_LINK}/blob/main/LICENSE`;
 export const NPM_LINK = `https://www.npmjs.com/package/${process.env.PACKAGE_NAME}`;
-export const SPONSORS_LINK = 'https://github.com/sponsors/icflorescu';
 export const MANTINE_LINK = 'https://mantine.dev';
 export const NEXTJS_LINK = 'https://nextjs.org';
 export const VITE_LINK = 'https://vitejs.dev';
@@ -33,14 +21,7 @@ export const REMIX_LINK = 'https://remix.run';
 export const CRA_LINK = 'https://create-react-app.dev';
 export const GATSBY_LINK = 'https://www.gatsbyjs.com';
 
-export const MANTINE_CONTEXTMENU_LINK = `${WEB_ROOT}/mantine-contextmenu`;
-export const MANTINE_CONTEXTMENU_PRODUCT_NAME = 'Mantine ContextMenu';
-
 export const DOWNLOADS_REFRESH_INTERVAL = 1000 * 60 * 60 * 24; // 1 day
-
-export const DOCSEARCH_APP_ID = 'QTPWIJ4FEH';
-export const DOCSEARCH_INDEX_NAME = 'mantine-datatable';
-export const DOCSEARCH_API_KEY = 'b6e1b8f8ada26b807cb65d32ad33ac21';
 
 export type RouteInfo = {
   href: Route;
@@ -183,11 +164,6 @@ export const ROUTES: RouteInfo[] = [
     description: `Example: handling cell click events on ${PRODUCT_NAME}`,
   },
   {
-    href: '/examples/using-with-mantine-contextmenu',
-    title: `Using with ${MANTINE_CONTEXTMENU_PRODUCT_NAME}`,
-    description: `Example: how to use ${PRODUCT_NAME} with ${MANTINE_CONTEXTMENU_PRODUCT_NAME}`,
-  },
-  {
     href: '/examples/expanding-rows',
     title: 'Expanding rows',
     description: `Example: the row expansion feature of ${PRODUCT_NAME}`,
@@ -270,25 +246,11 @@ export const ROUTES: RouteInfo[] = [
     color: 'grape',
   },
   {
-    href: '/mantine-v6-support',
-    title: 'Mantine V6 support',
-    description: `${PRODUCT_NAME} is compatible with Mantine V7; if you're using Mantine V6, please check the old documentation website`,
-    icon: IconQuestionMark,
-    color: 'orange',
-  },
-  {
     href: '/contribute-and-support',
-    title: 'Contribute and support',
-    description: `Contribute and support the development of ${PRODUCT_NAME} by sponsoring or hiring its author, starring the repo, raising issues, bringing up new ideas and coming up with pull-requests`,
+    title: 'Contributing',
+    description: `Learn how ${PRODUCT_NAME} evolves around our own feature requests and table-behavior semantics, and how to contribute by raising issues, bringing up new ideas and coming up with pull-requests`,
     icon: IconThumbUp,
     color: 'red',
-  },
-  {
-    href: '/hire-the-author',
-    title: 'Hire the author',
-    description: `Hire ${AUTHOR_NAME}, the author of ${PRODUCT_NAME}, a full-stack developer with 20+ years of experience`,
-    icon: IconHeartHandshake,
-    color: 'teal',
   },
   {
     href: `${REPO_LINK}/blob/main/CHANGELOG.md` as Route,

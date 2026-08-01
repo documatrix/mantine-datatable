@@ -17,7 +17,7 @@ type DataTableColumnWidth = Record<string, string | number>;
  *    the drag and afterwards.
  * 3. The lock stays in place until `resetColumnsWidth` is called.
  *
- * @see https://icflorescu.github.io/mantine-datatable/examples/column-resizing/
+ * @see https://documatrix.github.io/mantine-datatable/examples/column-resizing/
  */
 export function useDataTableColumnResize<T>({
   key,
