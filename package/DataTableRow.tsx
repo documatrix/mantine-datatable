@@ -168,6 +168,7 @@ export function DataTableRow<T>({
       open={expansion.isRowExpanded(record)}
       content={expansion.content({ record, index })}
       collapseProps={expansion.collapseProps}
+      virtualizedOdd={virtualization?.odd}
     />
   );
 
