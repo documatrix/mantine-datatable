@@ -60,7 +60,7 @@
     "build:package": "rm -rf dist; tsup --config scripts/tsup.esm.ts; tsup --config scripts/tsup.cjs.ts; tsup --config scripts/tsup.dts.ts; postcss package/styles*.css --dir dist",
     "build:docs": "next build",
     "build": "bun run build:package && bun run build:docs",
-    "lint": "biome check . && tsc --noEmit --pretty",
+    "lint": "next typegen && biome check . && tsc --noEmit --pretty",
     "format": "biome format --write ."
   },
   "devDependencies": {
