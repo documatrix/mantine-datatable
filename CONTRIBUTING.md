@@ -27,6 +27,18 @@ PRs are squash-merged, so the PR title becomes the commit message on `main` — 
 
 Releases are automated with [release-please](https://github.com/googleapis/release-please):
 
+```mermaid
+flowchart TD
+    PR["PR with conventional title (feat: / fix: / chore: ...)"] -- squash-merge --> MAIN[main]
+    MAIN --> TYPE{releasable type?}
+    TYPE -- "chore: / docs: / ci: ..." --> NOOP[nothing ships]
+    TYPE -- "feat: / fix: / breaking" --> RP["rolling release PR (version + changelog recalculated)"]
+    RP -. more PRs merged .-> RP
+    RP == maintainer merges release PR ==> REL["tag vX.Y.Z + GitHub release"]
+    REL --> NPM["npm publish (trusted publishing)"]
+    REL --> DOCS["docs deploy (GitHub Pages)"]
+```
+
 - Every merge to `main` updates a single **rolling release PR** (titled `chore(main): release ...`). It accumulates all releasable changes since the last release and always shows exactly what would ship, as which version, with the generated changelog.
 - The proposed version is derived from the accumulated commit types — the highest bump wins:
   - `fix:` → patch (0.1.0 → 0.1.1)
