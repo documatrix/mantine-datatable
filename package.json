@@ -1,6 +1,6 @@
 {
   "name": "@neeyo/mantine-datatable",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The lightweight, dependency-free, dark-theme aware table component for your Mantine UI data-rich applications, featuring asynchronous data loading support, pagination, intuitive Gmail-style additive batch rows selection, column sorting, custom cell data rendering, row expansion, nesting, and much more",
   "keywords": [
     "mantine",
