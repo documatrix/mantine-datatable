@@ -20,5 +20,20 @@ The `components` folder holds generic React components used by the documentation
 If you want to implement a new feature or improve an existing one, make sure to add an example page and/or alter the one(s) already referring to it.  
 It’s not a feature if other people don’t know about it or don’t understand how to use it.
 
-**Please target your PRs to the `main` branch and use [Conventional Commits](https://www.conventionalcommits.org/) in your PR titles** (e.g. `feat: ...`, `fix: ...`) — releases are automated with [release-please](https://github.com/googleapis/release-please), which derives version bumps and the changelog from them.
-Merging into `main` does not release anything by itself: release-please maintains a rolling release PR, and merging *that* PR cuts the GitHub release, publishes to npm and deploys the docs. `main` may therefore be ahead of the latest released version.
+**Please target your PRs to the `main` branch and use [Conventional Commits](https://www.conventionalcommits.org/) in your PR titles** (e.g. `feat: ...`, `fix: ...`).
+PRs are squash-merged, so the PR title becomes the commit message on `main` — individual commits inside a PR don't need to follow the convention.
+
+## Release process
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please):
+
+- Every merge to `main` updates a single **rolling release PR** (titled `chore(main): release ...`). It accumulates all releasable changes since the last release and always shows exactly what would ship, as which version, with the generated changelog.
+- The proposed version is derived from the accumulated commit types — the highest bump wins:
+  - `fix:` → patch (0.1.0 → 0.1.1)
+  - `feat:` → minor (0.1.0 → 0.2.0)
+  - `feat!:` / `fix!:` or a `BREAKING CHANGE:` footer → major
+  - `chore:`, `docs:`, `refactor:`, `ci:`, `test:`, `style:` → no version bump; if only such commits land, no release PR appears at all
+- **Merging the release PR is the release.** It bumps `package.json` and `CHANGELOG.md`, tags the commit, creates the GitHub release, publishes the package to npm (via trusted publishing) and deploys the documentation website. Nothing is published before that.
+- Release cadence is therefore fully controlled by whoever merges the release PR: merge ten feature PRs and the release PR simply grows; merge it once and all ten ship as one version.
+- `main` may be ahead of the latest released version at any time — npm and the docs website always reflect the last merged release PR, not `main`.
+- A release always contains *everything* on `main`; partial releases are not possible. If something must not ship yet, don't merge it into `main`.
