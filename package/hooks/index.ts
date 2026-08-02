@@ -13,3 +13,4 @@ export * from './useMediaQueriesStringOrFunction';
 export * from './useMediaQueryStringOrFunction';
 export * from './useRowExpansion';
 export * from './useRowExpansionStatus';
+export * from './useRowVirtualization';

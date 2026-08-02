@@ -1,7 +1,7 @@
 {
   "name": "@neeyo/mantine-datatable",
   "version": "0.1.0",
-  "description": "The lightweight, dependency-free, dark-theme aware table component for your Mantine UI data-rich applications, featuring asynchronous data loading support, pagination, intuitive Gmail-style additive batch rows selection, column sorting, custom cell data rendering, row expansion, nesting, and much more",
+  "description": "The lightweight, dark-theme aware table component for your Mantine UI data-rich applications, featuring asynchronous data loading support, pagination, intuitive Gmail-style additive batch rows selection, column sorting, custom cell data rendering, row expansion, nesting, and much more",
   "keywords": [
     "mantine",
     "data",
@@ -11,6 +11,7 @@
     "datagrid",
     "data table",
     "data grid",
+    "virtualization",
     "async",
     "nested",
     "sorting",
@@ -109,5 +110,8 @@
     "clsx": ">=2",
     "react": ">=19",
     "react-dom": ">=19"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "^3.14.9"
   }
 }

@@ -17,4 +17,5 @@ export * from './DataTableSelectionTrigger';
 export * from './DataTableSortProps';
 export * from './DataTableSortStatus';
 export * from './DataTableVerticalAlign';
+export * from './DataTableVirtualizationProps';
 export * from './utils';
