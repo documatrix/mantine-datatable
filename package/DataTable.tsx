@@ -234,25 +234,38 @@ export function DataTable<T>({
     return () => cancelAnimationFrame(raf);
   }, [fetching, records, refs.scrollViewport]);
 
-  const recordIds = records?.map((record) => getRecordId(record, idAccessor));
+  // The virtualizer re-renders the component on every scroll frame, so anything derived from
+  // records/selectedRecords must be memoized and selection lookups must be O(1); otherwise
+  // large datasets with selection enabled degrade to quadratic work per frame.
+  const recordIds = useMemo(() => records?.map((record) => getRecordId(record, idAccessor)), [records, idAccessor]);
   const selectionColumnVisible = !!selectedRecords;
-  const selectedRecordIds = selectedRecords?.map((record) => getRecordId(record, idAccessor));
+  const selectedRecordIdsSet = useMemo(
+    () => (selectedRecords ? new Set(selectedRecords.map((record) => getRecordId(record, idAccessor))) : undefined),
+    [selectedRecords, idAccessor]
+  );
   const hasRecordsAndSelectedRecords =
-    recordIds !== undefined && selectedRecordIds !== undefined && selectedRecordIds.length > 0;
+    recordIds !== undefined && selectedRecordIdsSet !== undefined && selectedRecordIdsSet.size > 0;
 
-  const selectableRecords = isRecordSelectable ? records?.filter(isRecordSelectable) : records;
-  const selectableRecordIds = selectableRecords?.map((record) => getRecordId(record, idAccessor));
+  const selectableRecords = useMemo(
+    () => (isRecordSelectable ? records?.filter(isRecordSelectable) : records),
+    [records, isRecordSelectable]
+  );
+  const selectableRecordIds = useMemo(
+    () => selectableRecords?.map((record) => getRecordId(record, idAccessor)),
+    [selectableRecords, idAccessor]
+  );
 
   const allSelectableRecordsSelected =
-    hasRecordsAndSelectedRecords && selectableRecordIds!.every((id) => selectedRecordIds.includes(id));
+    hasRecordsAndSelectedRecords && selectableRecordIds!.every((id) => selectedRecordIdsSet.has(id));
   const someRecordsSelected =
-    hasRecordsAndSelectedRecords && selectableRecordIds!.some((id) => selectedRecordIds.includes(id));
+    hasRecordsAndSelectedRecords && selectableRecordIds!.some((id) => selectedRecordIdsSet.has(id));
 
   const handleHeaderSelectionChange = useCallback(() => {
     if (selectedRecords && onSelectedRecordsChange) {
+      const selectableRecordIdsSet = new Set(selectableRecordIds);
       onSelectedRecordsChange(
         allSelectableRecordsSelected
-          ? selectedRecords.filter((record) => !selectableRecordIds!.includes(getRecordId(record, idAccessor)))
+          ? selectedRecords.filter((record) => !selectableRecordIdsSet.has(getRecordId(record, idAccessor)))
           : uniqBy([...selectedRecords, ...selectableRecords!], (record) => getRecordId(record, idAccessor))
       );
     }
@@ -274,7 +287,7 @@ export function DataTable<T>({
 
   const renderRow = (record: T, index: number) => {
     const recordId = getRecordId(record, idAccessor);
-    const isSelected = selectedRecordIds?.includes(recordId) || false;
+    const isSelected = selectedRecordIdsSet?.has(recordId) || false;
 
     let handleSelectionChange: React.MouseEventHandler | undefined;
 
