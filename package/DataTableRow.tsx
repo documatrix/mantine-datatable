@@ -1,6 +1,7 @@
 import type { MantineTheme } from '@mantine/core';
 import { type CheckboxProps, type MantineColor, type MantineStyleProp, TableTr } from '@mantine/core';
 import clsx from 'clsx';
+import { memo, useCallback } from 'react';
 import { getRowCssVariables } from './cssVariables';
 import { DataTableRowCell } from './DataTableRowCell';
 import { DataTableRowExpansion } from './DataTableRowExpansion';
@@ -28,7 +29,7 @@ type DataTableRowProps<T> = {
   selectionTrigger: DataTableSelectionTrigger;
   selectionVisible: boolean;
   selectionChecked: boolean;
-  onSelectionChange: React.MouseEventHandler | undefined;
+  onSelectionChange: ((record: T, index: number, event: React.MouseEvent) => void) | undefined;
   isRecordSelectable: ((record: T, index: number) => boolean) | undefined;
   selectionCheckboxProps: CheckboxProps | undefined;
   getSelectionCheckboxProps: (record: T, index: number) => CheckboxProps;
@@ -52,13 +53,11 @@ type DataTableRowProps<T> = {
   selectionColumnClassName: string | undefined;
   selectionColumnStyle: MantineStyleProp | undefined;
   idAccessor: string;
-  virtualization?: {
-    measureRef: (element: HTMLTableRowElement | null) => void;
-    odd: boolean;
-  };
+  virtualizedMeasureRef?: (element: HTMLTableRowElement | null) => void;
+  virtualizedOdd?: boolean;
 } & Pick<DataTableProps<T>, 'rowFactory'>;
 
-export function DataTableRow<T>({
+function DataTableRowInner<T>({
   record,
   index,
   columns,
@@ -88,8 +87,15 @@ export function DataTableRow<T>({
   selectionColumnClassName,
   selectionColumnStyle,
   rowFactory,
-  virtualization,
+  virtualizedMeasureRef,
+  virtualizedOdd,
 }: Readonly<DataTableRowProps<T>>) {
+  const handleSelectionChangeForRow: React.MouseEventHandler | undefined = useCallback(
+    (e: React.MouseEvent) => {
+      onSelectionChange?.(record, index, e);
+    },
+    [onSelectionChange, record, index]
+  );
   const cols = (
     <>
       {selectionVisible && (
@@ -102,7 +108,7 @@ export function DataTableRow<T>({
           withRightShadow={selectorCellShadowVisible}
           checked={selectionChecked}
           disabled={!onSelectionChange || (isRecordSelectable ? !isRecordSelectable(record, index) : false)}
-          onChange={onSelectionChange}
+          onChange={handleSelectionChangeForRow}
           checkboxProps={selectionCheckboxProps}
           getCheckboxProps={getSelectionCheckboxProps}
         />
@@ -168,7 +174,7 @@ export function DataTableRow<T>({
       open={expansion.isRowExpanded(record)}
       content={expansion.content({ record, index })}
       collapseProps={expansion.collapseProps}
-      virtualizedOdd={virtualization?.odd}
+      virtualizedOdd={virtualizedOdd}
     />
   );
 
@@ -190,12 +196,12 @@ export function DataTableRow<T>({
   // The virtualizer measures rendered rows through the ref and locates them by `data-index`;
   // `data-odd` drives index-based striping, since `:nth-of-type` parity breaks when only a
   // window of rows is present in the DOM.
-  const rowProps = virtualization
+  const rowProps = virtualizedMeasureRef
     ? {
         ...baseRowProps,
-        ref: virtualization.measureRef,
+        ref: virtualizedMeasureRef,
         'data-index': index,
-        'data-odd': virtualization.odd || undefined,
+        'data-odd': virtualizedOdd || undefined,
       }
     : baseRowProps;
 
@@ -216,6 +222,11 @@ export function DataTableRow<T>({
     </>
   );
 }
+
+// Memo wrapper — prevents re-render when parent re-renders but props haven't changed
+// (e.g. when selectedRecords changes, only the affected row re-renders)
+// biome-ignore lint/suspicious/noExplicitAny: generic memo requires any cast
+export const DataTableRow = memo(DataTableRowInner) as any as typeof DataTableRowInner;
 
 type GetRowPropsArgs<T> = Readonly<
   Pick<

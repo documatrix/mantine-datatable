@@ -2,24 +2,6 @@
   flex: 1 1 100%;
 }
 
-.mantine-datatable-scroll-area-corner {
-  background: transparent;
-}
-
-.mantine-datatable-scroll-area-thumb {
-  z-index: 5;
-}
-
-.mantine-datatable-scroll-area-scrollbar {
-  z-index: 5;
-  &[data-state='visible'] {
-    background: transparent;
-  }
-  div::before {
-    pointer-events: none;
-  }
-}
-
 .mantine-datatable-scroll-area-shadow {
   position: absolute;
   pointer-events: none;

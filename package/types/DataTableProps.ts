@@ -1,7 +1,6 @@
 import type {
   MantineShadow,
   MantineStyleProp,
-  ScrollAreaProps,
   StylesRecord,
   TableProps,
   TableTrProps,
@@ -240,7 +239,7 @@ export type DataTableProps<T = Record<string, unknown>> = {
   /**
    * Additional props passed to the underlying `ScrollArea` element.
    */
-  scrollAreaProps?: Omit<ScrollAreaProps, 'classNames' | 'styles' | 'onScrollPositionChange'>;
+  scrollAreaProps?: React.HTMLAttributes<HTMLDivElement>;
 
   /**
    * Ref pointing to the table element.
