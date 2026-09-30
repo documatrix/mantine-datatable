@@ -1,5 +1,5 @@
 import { useVirtualizer, type VirtualItem, type Virtualizer } from '@tanstack/react-virtual';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
 
 type UseRowVirtualizationOptions = {
@@ -86,6 +86,12 @@ export function useRowVirtualization({
     }
   }, [enabled, virtualizer, virtualizerRef]);
 
+  // Measuring can make the virtualizer flushSync, which React forbids (and warns about) inside ref callbacks.
+  const measureRef = useCallback(
+    (element: HTMLTableRowElement | null) => queueMicrotask(() => virtualizer.measureElement(element)),
+    [virtualizer]
+  );
+
   if (!enabled) return null;
 
   const virtualItems = virtualizer.getVirtualItems();
@@ -94,6 +100,6 @@ export function useRowVirtualization({
     virtualItems,
     paddingTop: virtualItems.length > 0 ? virtualItems[0].start : 0,
     paddingBottom: virtualItems.length > 0 ? virtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end : 0,
-    measureRef: virtualizer.measureElement,
+    measureRef,
   };
 }
