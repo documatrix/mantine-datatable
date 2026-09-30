@@ -26,6 +26,24 @@ import type { DataTableProps } from './types';
 import { TEXT_SELECTION_DISABLED } from './utilityClasses';
 import { differenceBy, flattenColumns, getRecordId, uniqBy } from './utils';
 
+const defaultGetRecordSelectionCheckboxProps: NonNullable<
+  DataTableProps<unknown>['getRecordSelectionCheckboxProps']
+> = (_, index) => ({ 'aria-label': `Select record ${index + 1}` });
+
+const defaultPaginationText: NonNullable<DataTableProps<unknown>['paginationText']> = ({ from, to, totalRecords }) =>
+  `${from} - ${to} / ${totalRecords}`;
+
+const defaultGetPaginationControlProps: NonNullable<DataTableProps<unknown>['getPaginationControlProps']> = (
+  control
+) => {
+  if (control === 'previous') {
+    return { 'aria-label': 'Previous page' };
+  } else if (control === 'next') {
+    return { 'aria-label': 'Next page' };
+  }
+  return {};
+};
+
 export function DataTable<T>({
   withTableBorder,
   borderRadius,
@@ -53,7 +71,7 @@ export function DataTable<T>({
   isRecordSelectable,
   selectionCheckboxProps,
   allRecordsSelectionCheckboxProps = { 'aria-label': 'Select all records' },
-  getRecordSelectionCheckboxProps = (_, index) => ({ 'aria-label': `Select record ${index + 1}` }),
+  getRecordSelectionCheckboxProps = defaultGetRecordSelectionCheckboxProps,
   sortStatus,
   sortIcons,
   onSortStatusChange,
@@ -70,16 +88,9 @@ export function DataTable<T>({
   paginationActiveTextColor,
   paginationActiveBackgroundColor,
   paginationSize = 'sm',
-  paginationText = ({ from, to, totalRecords }) => `${from} - ${to} / ${totalRecords}`,
+  paginationText = defaultPaginationText,
   paginationWrapBreakpoint = 'sm',
-  getPaginationControlProps = (control) => {
-    if (control === 'previous') {
-      return { 'aria-label': 'Previous page' };
-    } else if (control === 'next') {
-      return { 'aria-label': 'Next page' };
-    }
-    return {};
-  },
+  getPaginationControlProps = defaultGetPaginationControlProps,
   getPaginationItemProps,
   renderPagination,
   loaderBackgroundBlur,
@@ -144,7 +155,17 @@ export function DataTable<T>({
     return groups ? flattenColumns(groups) : columns!;
   }, [columns, groups]);
 
-  const { refs, onScroll: handleScrollPositionChange } = useDataTableInjectCssVariables({
+  const {
+    refs: {
+      root: rootElementRef,
+      table: tableElementRef,
+      scrollViewport: scrollViewportElementRef,
+      header: headerElementRef,
+      footer: footerElementRef,
+      selectionColumnHeader: selectionColumnHeaderElementRef,
+    },
+    onScroll: handleScrollPositionChange,
+  } = useDataTableInjectCssVariables({
     scrollCallbacks: {
       onScroll,
       onScrollToTop,
@@ -158,25 +179,25 @@ export function DataTable<T>({
   const dragToggle = useDataTableColumns({
     key: storeColumnsKey,
     columns: flatColumns,
-    headerRef: refs.header as RefObject<HTMLTableSectionElement | null>,
-    scrollViewportRef: refs.scrollViewport as RefObject<HTMLElement | null>,
+    headerRef: headerElementRef as RefObject<HTMLTableSectionElement | null>,
+    scrollViewportRef: scrollViewportElementRef as RefObject<HTMLElement | null>,
   });
 
   // Use the columns enriched with order/visibility/width from the hook so
   // resize widths actually reach the rendered <th>/<td> cells.
   const effectiveColumns = dragToggle.effectiveColumns;
 
-  const mergedTableRef = useMergedRef(refs.table, tableRef);
-  const mergedViewportRef = useMergedRef(refs.scrollViewport, scrollViewportRef);
+  const mergedTableRef = useMergedRef(tableElementRef, tableRef);
+  const mergedViewportRef = useMergedRef(scrollViewportElementRef, scrollViewportRef);
   const internalBodyRef = useRef<HTMLTableSectionElement>(null);
   const mergedBodyRef = useMergedRef(internalBodyRef, bodyRef);
   const rowExpansionInfo = useRowExpansion<T>({ rowExpansion, records, idAccessor });
 
   const { pinnedMap, hasLeftPinned, hasRightPinned } = useDataTablePinnedColumns({
     columns: effectiveColumns,
-    theadRef: refs.header as RefObject<HTMLTableSectionElement | null>,
+    theadRef: headerElementRef as RefObject<HTMLTableSectionElement | null>,
     tbodyRef: internalBodyRef,
-    selectionColumnHeaderRef: refs.selectionColumnHeader as RefObject<HTMLTableCellElement | null>,
+    selectionColumnHeaderRef: selectionColumnHeaderElementRef as RefObject<HTMLTableCellElement | null>,
     selectionVisible: !!selectedRecords,
     pinFirstColumn,
     pinLastColumn,
@@ -210,7 +231,7 @@ export function DataTable<T>({
   const rowVirtualization = useRowVirtualization({
     enabled: !!virtualized,
     count: recordsLength ?? 0,
-    scrollViewportRef: refs.scrollViewport as RefObject<HTMLElement | null>,
+    scrollViewportRef: scrollViewportElementRef as RefObject<HTMLElement | null>,
     rowHeight: virtualizedRowHeight,
     overscan: virtualizedOverscan,
     getItemKey: records ? (index) => getRecordId(records[index], idAccessor) as string | number : undefined,
@@ -223,7 +244,7 @@ export function DataTable<T>({
     if (fetching) return;
     if (records === recordsAtPageChangeRef.current) return;
 
-    const viewport = refs.scrollViewport.current;
+    const viewport = scrollViewportElementRef.current;
     if (!viewport) return;
 
     const raf = requestAnimationFrame(() => {
@@ -232,7 +253,7 @@ export function DataTable<T>({
     });
 
     return () => cancelAnimationFrame(raf);
-  }, [fetching, records, refs.scrollViewport]);
+  }, [fetching, records, scrollViewportElementRef]);
 
   // The virtualizer re-renders the component on every scroll frame, so anything derived from
   // records/selectedRecords must be memoized and selection lookups must be O(1); otherwise
@@ -372,7 +393,7 @@ export function DataTable<T>({
   return (
     <DataTableColumnsProvider {...dragToggle} pinnedMap={pinnedMap}>
       <Box
-        ref={refs.root}
+        ref={rootElementRef}
         {...marginProperties}
         className={clsx(
           'mantine-datatable',
@@ -441,8 +462,8 @@ export function DataTable<T>({
               {noHeader ? null : (
                 <DataTableColumnsProvider {...dragToggle} pinnedMap={pinnedMap}>
                   <DataTableHeader<T>
-                    ref={refs.header}
-                    selectionColumnHeaderRef={refs.selectionColumnHeader}
+                    ref={headerElementRef}
+                    selectionColumnHeaderRef={selectionColumnHeaderElementRef}
                     className={classNames?.header}
                     style={styles?.header}
                     columns={effectiveColumns}
@@ -487,7 +508,7 @@ export function DataTable<T>({
 
               {effectiveColumns.some(({ footer }) => footer) && (
                 <DataTableFooter<T>
-                  ref={refs.footer}
+                  ref={footerElementRef}
                   className={classNames?.footer}
                   style={styles?.footer}
                   columns={effectiveColumns}
