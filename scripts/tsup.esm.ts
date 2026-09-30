@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsup';
+import { reactCompilerPlugin } from './reactCompilerPlugin';
 
 export default defineConfig({
   entry: ['package/index.ts'],
@@ -8,4 +9,5 @@ export default defineConfig({
   minify: true,
   sourcemap: true,
   clean: false,
+  esbuildPlugins: [reactCompilerPlugin],
 });
