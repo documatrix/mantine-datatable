@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { DataTableScrollProps } from '../types/DataTableScrollProps';
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
 import { useStableValue } from './useStableValue';
+
 const VAR_HEADER_HEIGHT = '--mantine-datatable-header-height';
 const VAR_FOOTER_HEIGHT = '--mantine-datatable-footer-height';
 const VAR_SELECTION_COLUMN_WIDTH = '--mantine-datatable-selection-column-width';
@@ -13,7 +14,7 @@ interface UseDataTableInjectCssVariablesOpts {
   withRowBorders: boolean | undefined;
 }
 
-type OnScroll = React.UIEventHandler<HTMLElement>;
+type OnScroll = NonNullable<DataTableScrollProps['onScroll']>;
 
 type Rect = {
   width: number;
@@ -74,8 +75,7 @@ export function useDataTableInjectCssVariables({
   const processLastRowBottomBorderRef = useRef<() => void>(() => void 0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: stable refs only
   const onScroll = useCallback<OnScroll>((ev) => {
-    const el = ev.currentTarget;
-    stableScrollCallbacks.current.onScroll?.({ x: el.scrollLeft, y: el.scrollTop });
+    stableScrollCallbacks.current.onScroll?.(ev);
     processScrollingRef.current();
   }, []);
 

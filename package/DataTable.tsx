@@ -21,43 +21,10 @@ import {
   useLastSelectionChangeIndex,
   useRowExpansion,
   useRowVirtualization,
-  useStableValue,
 } from './hooks';
 import type { DataTableProps } from './types';
 import { TEXT_SELECTION_DISABLED } from './utilityClasses';
 import { differenceBy, flattenColumns, getRecordId, uniqBy } from './utils';
-
-const DEFAULT_ALL_RECORDS_SELECTION_CHECKBOX_PROPS = { 'aria-label': 'Select all records' };
-const DEFAULT_GET_RECORD_SELECTION_CHECKBOX_PROPS = (_: unknown, index: number) => ({
-  'aria-label': `Select record ${index + 1}`,
-});
-
-/** Shallow-compare two plain objects by reference-equality of their values. */
-function shallowEqualObjects(
-  a: Record<string, unknown> | null | undefined,
-  b: Record<string, unknown> | null | undefined
-): boolean {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-  return keysA.every((k) => a[k] === b[k]);
-}
-
-/**
- * Return a stable reference for an object: only updates when the object is
- * not shallowly equal to the previous value.  This prevents inline JSX object
- * literals like `selectionCheckboxProps={{ size: 'sm' }}` from busting
- * React.memo on child rows every render.
- */
-function useShallowStableObject<T extends Record<string, unknown> | undefined>(value: T): T {
-  const ref = useRef(value);
-  if (!shallowEqualObjects(ref.current as Record<string, unknown> | undefined, value as Record<string, unknown> | undefined)) {
-    ref.current = value;
-  }
-  return ref.current as T;
-}
 
 export function DataTable<T>({
   withTableBorder,
@@ -85,8 +52,8 @@ export function DataTable<T>({
   selectionColumnStyle,
   isRecordSelectable,
   selectionCheckboxProps,
-  allRecordsSelectionCheckboxProps = DEFAULT_ALL_RECORDS_SELECTION_CHECKBOX_PROPS,
-  getRecordSelectionCheckboxProps = DEFAULT_GET_RECORD_SELECTION_CHECKBOX_PROPS,
+  allRecordsSelectionCheckboxProps = { 'aria-label': 'Select all records' },
+  getRecordSelectionCheckboxProps = (_, index) => ({ 'aria-label': `Select record ${index + 1}` }),
   sortStatus,
   sortIcons,
   onSortStatusChange,
@@ -197,19 +164,7 @@ export function DataTable<T>({
 
   // Use the columns enriched with order/visibility/width from the hook so
   // resize widths actually reach the rendered <th>/<td> cells.
-  //
-  // Split into two references:
-  // - effectiveColumns: always fresh — used by the header/footer so that dynamic
-  //   column props (filtering, filter closures, title, etc.) always render correctly.
-  // - effectiveColumnsStable: memoized by structural key — used by DataTableRow so
-  //   that React.memo on rows is not busted on every parent render (only breaks when
-  //   accessor/hidden/width/pinned actually change).
   const effectiveColumns = dragToggle.effectiveColumns;
-  const effectiveColumnsKey = effectiveColumns
-    .map((c) => `${String(c.accessor)}|${c.hidden ?? 0}|${String(c.width ?? '')}|${c.pinned ?? ''}`)
-    .join('\0');
-  // biome-ignore lint/correctness/useExhaustiveDependencies: content key is the dep
-  const effectiveColumnsStable = useMemo(() => effectiveColumns, [effectiveColumnsKey]);
 
   const mergedTableRef = useMergedRef(refs.table, tableRef);
   const mergedViewportRef = useMergedRef(refs.scrollViewport, scrollViewportRef);
@@ -330,145 +285,64 @@ export function DataTable<T>({
 
   const spacerRowColSpan = effectiveColumns.filter(({ hidden }) => !hidden).length + (selectionColumnVisible ? 1 : 0);
 
-  // Stabilize user-provided props that are commonly passed as inline literals
-  const stableSelectionCheckboxProps = useShallowStableObject(selectionCheckboxProps as Record<string, unknown> | undefined) as typeof selectionCheckboxProps;
-
-  // --- Stable selection handler via refs ---
-  const selectedRecordsRef = useStableValue(selectedRecords);
-  const selectedRecordIdsRef = useStableValue(selectedRecordIdsSet);
-  const lastSelectionChangeIndexRef = useStableValue(lastSelectionChangeIndex);
-  const recordsRef = useStableValue(records);
-  const onSelectedRecordsChangeRef = useStableValue(onSelectedRecordsChange);
-  const isRecordSelectableRef = useStableValue(isRecordSelectable);
-  const getRecordSelectionCheckboxPropsRef = useStableValue(getRecordSelectionCheckboxProps);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally stable — reads via ref
-  const stableGetRecordSelectionCheckboxProps = useCallback(
-    (record: T, index: number) => getRecordSelectionCheckboxPropsRef.current(record, index),
-    []
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally stable — reads via ref
-  const _isRecordSelectableWrapper = useCallback(
-    (record: T, index: number) => isRecordSelectableRef.current?.(record, index) ?? true,
-    []
-  );
-  const stableIsRecordSelectable = isRecordSelectable ? _isRecordSelectableWrapper : undefined;
-
-  const handleSelectionChange = useCallback(
-    (record: T, index: number, e: React.MouseEvent) => {
-      const onChangeRec = onSelectedRecordsChangeRef.current;
-      if (!onChangeRec) return;
-      const currentSelected = selectedRecordsRef.current;
-      if (!currentSelected) return;
-      const recordId = getRecordId(record, idAccessor);
-      const isSelected = selectedRecordIdsRef.current?.has(recordId) || false;
-      const isSelectable = isRecordSelectableRef.current;
-
-      if (e.nativeEvent.shiftKey && lastSelectionChangeIndexRef.current !== null) {
-        const lastIdx = lastSelectionChangeIndexRef.current;
-        const currentRecords = recordsRef.current!;
-        const targetRecords = currentRecords.filter(
-          index > lastIdx
-            ? (rec: T, idx: number) =>
-                idx >= lastIdx && idx <= index && (isSelectable ? isSelectable(rec, idx) : true)
-            : (rec: T, idx: number) =>
-                idx >= index && idx <= lastIdx && (isSelectable ? isSelectable(rec, idx) : true)
-        );
-        onChangeRec(
-          isSelected
-            ? differenceBy(currentSelected, targetRecords, (r) => getRecordId(r, idAccessor))
-            : uniqBy([...currentSelected, ...targetRecords], (r) => getRecordId(r, idAccessor))
-        );
-      } else {
-        onChangeRec(
-          isSelected
-            ? currentSelected.filter((rec: T) => getRecordId(rec, idAccessor) !== recordId)
-            : uniqBy([...currentSelected, record], (rec) => getRecordId(rec, idAccessor))
-        );
-      }
-      setLastSelectionChangeIndex(index);
-    },
-    // idAccessor is typically a stable string ('id'); setLastSelectionChangeIndex is a useState setter
-    // biome-ignore lint/correctness/useExhaustiveDependencies: all other deps are read via refs
-    [idAccessor, setLastSelectionChangeIndex]
-  );
-
-  const stableSelectionChange = onSelectedRecordsChange && selectedRecords ? handleSelectionChange : undefined;
-
-  // --- Stable row event handlers via refs ---
-  const onRowClickRef = useStableValue(onRowClick);
-  const onRowDoubleClickRef = useStableValue(onRowDoubleClick);
-  const onRowContextMenuRef = useStableValue(onRowContextMenu);
-  const onCellClickRef = useStableValue(onCellClick);
-  const onCellDoubleClickRef = useStableValue(onCellDoubleClick);
-  const onCellContextMenuRef = useStableValue(onCellContextMenu);
-
-  // Always-created stable wrappers; only forwarded when the original prop is truthy
-  // (so DataTableRow's cursor/expansion logic still sees undefined when there's no handler)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally stable — reads via ref
-  const _rowClickWrapper = useCallback(
-    (args: Parameters<NonNullable<typeof onRowClick>>[0]) => onRowClickRef.current?.(args),
-    []
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally stable — reads via ref
-  const _rowDoubleClickWrapper = useCallback(
-    (args: Parameters<NonNullable<typeof onRowDoubleClick>>[0]) => onRowDoubleClickRef.current?.(args),
-    []
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally stable — reads via ref
-  const _rowContextMenuWrapper = useCallback(
-    (args: Parameters<NonNullable<typeof onRowContextMenu>>[0]) => onRowContextMenuRef.current?.(args),
-    []
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally stable — reads via ref
-  const _cellClickWrapper = useCallback(
-    (args: Parameters<NonNullable<typeof onCellClick>>[0]) => onCellClickRef.current?.(args),
-    []
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally stable — reads via ref
-  const _cellDoubleClickWrapper = useCallback(
-    (args: Parameters<NonNullable<typeof onCellDoubleClick>>[0]) => onCellDoubleClickRef.current?.(args),
-    []
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally stable — reads via ref
-  const _cellContextMenuWrapper = useCallback(
-    (args: Parameters<NonNullable<typeof onCellContextMenu>>[0]) => onCellContextMenuRef.current?.(args),
-    []
-  );
-  // Expose conditionally so downstream undefined checks remain correct
-  const stableOnRowClick = onRowClick ? _rowClickWrapper : undefined;
-  const stableOnRowDoubleClick = onRowDoubleClick ? _rowDoubleClickWrapper : undefined;
-  const stableOnRowContextMenu = onRowContextMenu ? _rowContextMenuWrapper : undefined;
-  const stableOnCellClick = onCellClick ? _cellClickWrapper : undefined;
-  const stableOnCellDoubleClick = onCellDoubleClick ? _cellDoubleClickWrapper : undefined;
-  const stableOnCellContextMenu = onCellContextMenu ? _cellContextMenuWrapper : undefined;
-
   const renderRow = (record: T, index: number) => {
     const recordId = getRecordId(record, idAccessor);
     const isSelected = selectedRecordIdsSet?.has(recordId) || false;
+
+    let handleSelectionChange: React.MouseEventHandler | undefined;
+
+    if (onSelectedRecordsChange && selectedRecords) {
+      handleSelectionChange = (e) => {
+        if (e.nativeEvent.shiftKey && lastSelectionChangeIndex !== null) {
+          const targetRecords = records!.filter(
+            index > lastSelectionChangeIndex
+              ? (rec, idx) =>
+                  idx >= lastSelectionChangeIndex &&
+                  idx <= index &&
+                  (isRecordSelectable ? isRecordSelectable(rec, idx) : true)
+              : (rec, idx) =>
+                  idx >= index &&
+                  idx <= lastSelectionChangeIndex &&
+                  (isRecordSelectable ? isRecordSelectable(rec, idx) : true)
+          );
+          onSelectedRecordsChange(
+            isSelected
+              ? differenceBy(selectedRecords, targetRecords, (r) => getRecordId(r, idAccessor))
+              : uniqBy([...selectedRecords, ...targetRecords], (r) => getRecordId(r, idAccessor))
+          );
+        } else {
+          onSelectedRecordsChange(
+            isSelected
+              ? selectedRecords.filter((rec) => getRecordId(rec, idAccessor) !== recordId)
+              : uniqBy([...selectedRecords, record], (rec) => getRecordId(rec, idAccessor))
+          );
+        }
+        setLastSelectionChangeIndex(index);
+      };
+    }
 
     return (
       <DataTableRow<T>
         key={recordId as React.Key}
         record={record}
         index={index}
-        columns={effectiveColumnsStable}
+        columns={effectiveColumns}
         defaultColumnProps={defaultColumnProps}
         pinnedMap={pinnedMap}
         defaultColumnRender={defaultColumnRender}
         selectionTrigger={selectionTrigger}
         selectionVisible={selectionColumnVisible}
         selectionChecked={isSelected}
-        onSelectionChange={stableSelectionChange}
-        isRecordSelectable={stableIsRecordSelectable}
-        selectionCheckboxProps={stableSelectionCheckboxProps}
-        getSelectionCheckboxProps={stableGetRecordSelectionCheckboxProps}
-        onClick={stableOnRowClick}
-        onDoubleClick={stableOnRowDoubleClick}
-        onCellClick={stableOnCellClick}
-        onCellDoubleClick={stableOnCellDoubleClick}
-        onContextMenu={stableOnRowContextMenu}
-        onCellContextMenu={stableOnCellContextMenu}
+        onSelectionChange={handleSelectionChange}
+        isRecordSelectable={isRecordSelectable}
+        selectionCheckboxProps={selectionCheckboxProps}
+        getSelectionCheckboxProps={getRecordSelectionCheckboxProps}
+        onClick={onRowClick}
+        onDoubleClick={onRowDoubleClick}
+        onCellClick={onCellClick}
+        onCellDoubleClick={onCellDoubleClick}
+        onContextMenu={onRowContextMenu}
+        onCellContextMenu={onCellContextMenu}
         expansion={rowExpansionInfo}
         color={rowColor}
         backgroundColor={rowBackgroundColor}
@@ -480,8 +354,9 @@ export function DataTable<T>({
         selectionColumnStyle={selectionColumnStyle}
         idAccessor={idAccessor as string}
         rowFactory={rowFactory}
-        virtualizedMeasureRef={rowVirtualization ? rowVirtualization.measureRef : undefined}
-        virtualizedOdd={rowVirtualization ? index % 2 === 0 : undefined}
+        virtualization={
+          rowVirtualization ? { measureRef: rowVirtualization.measureRef, odd: index % 2 === 0 } : undefined
+        }
       />
     );
   };
@@ -533,7 +408,7 @@ export function DataTable<T>({
           viewportRef={mergedViewportRef}
           leftShadowBehind={selectionColumnVisible || hasLeftPinned}
           rightShadowBehind={hasRightPinned}
-          onScroll={handleScrollPositionChange}
+          onScrollPositionChange={handleScrollPositionChange}
           scrollAreaProps={scrollAreaProps}
         >
           <TableWrapper>
@@ -582,7 +457,7 @@ export function DataTable<T>({
                     selectionChecked={allSelectableRecordsSelected}
                     selectionIndeterminate={someRecordsSelected && !allSelectableRecordsSelected}
                     onSelectionChange={handleHeaderSelectionChange}
-                    selectionCheckboxProps={{ ...stableSelectionCheckboxProps, ...allRecordsSelectionCheckboxProps }}
+                    selectionCheckboxProps={{ ...selectionCheckboxProps, ...allRecordsSelectionCheckboxProps }}
                     selectorCellShadowVisible={selectorCellShadowVisible}
                     selectionColumnClassName={selectionColumnClassName}
                     selectionColumnStyle={selectionColumnStyle}

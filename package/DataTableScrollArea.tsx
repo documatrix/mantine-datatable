@@ -1,34 +1,33 @@
-import { Box } from '@mantine/core';
+import { Box, ScrollArea, type ScrollAreaProps } from '@mantine/core';
 import clsx from 'clsx';
 
 type DataTableScrollAreaProps = React.PropsWithChildren<{
   leftShadowBehind: boolean;
   rightShadowBehind: boolean | undefined;
-  onScroll: React.UIEventHandler<HTMLDivElement>;
+  onScrollPositionChange: ScrollAreaProps['onScrollPositionChange'];
   viewportRef: React.Ref<HTMLDivElement>;
-  scrollAreaProps: React.HTMLAttributes<HTMLDivElement> | undefined;
+  scrollAreaProps: Omit<ScrollAreaProps, 'classNames' | 'styles' | 'onScrollPositionChange'> | undefined;
 }>;
 
 export function DataTableScrollArea({
   leftShadowBehind,
   rightShadowBehind,
-  onScroll,
+  onScrollPositionChange,
   children,
   viewportRef,
   scrollAreaProps,
 }: DataTableScrollAreaProps) {
   return (
-    <div
+    <ScrollArea
       {...scrollAreaProps}
-      ref={viewportRef}
-      onScroll={onScroll}
-      className={clsx('mantine-datatable-scroll-area', scrollAreaProps?.className)}
-      style={{
-        overflow: 'auto',
-        position: 'relative',
-        flex: '1 1 100%',
-        ...scrollAreaProps?.style,
+      viewportRef={viewportRef}
+      classNames={{
+        root: 'mantine-datatable-scroll-area',
+        scrollbar: 'mantine-datatable-scroll-area-scrollbar',
+        thumb: 'mantine-datatable-scroll-area-thumb',
+        corner: 'mantine-datatable-scroll-area-corner',
       }}
+      onScrollPositionChange={onScrollPositionChange}
     >
       {children}
       <Box className={clsx('mantine-datatable-scroll-area-shadow', 'mantine-datatable-scroll-area-top-shadow')} />
@@ -43,6 +42,6 @@ export function DataTableScrollArea({
         })}
       />
       <Box className={clsx('mantine-datatable-scroll-area-shadow', 'mantine-datatable-scroll-area-bottom-shadow')} />
-    </div>
+    </ScrollArea>
   );
 }
