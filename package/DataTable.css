@@ -124,11 +124,17 @@
     background: inherit;
   }
 
-  &[data-striped] tbody tr:nth-of-type(odd) {
+  &[data-striped]:not([data-virtualized]) tbody tr:nth-of-type(odd) {
     background: var(--mantine-datatable-striped-color);
   }
 
-  &[data-highlight-on-hover] tbody tr:hover {
+  /* When rows are virtualized, `:nth-of-type` parity breaks as the rendered window moves,
+     so stripes are driven by the record-index-based `data-odd` attribute instead. */
+  &[data-striped][data-virtualized] tbody tr[data-odd] {
+    background: var(--mantine-datatable-striped-color);
+  }
+
+  &[data-highlight-on-hover] tbody tr:not(.mantine-datatable-spacer-row):hover {
     background: var(--mantine-datatable-highlight-on-hover-color);
   }
 

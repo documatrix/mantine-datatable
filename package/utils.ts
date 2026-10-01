@@ -46,14 +46,21 @@ export function hasStringAccessor(item: unknown): boolean {
  * Utility function that returns an array of values that are present in the first array but not in the second
  */
 export function differenceBy<T>(arr1: T[], arr2: T[], iteratee: (value: T) => unknown) {
-  return arr1.filter((c) => !arr2.map(iteratee).includes(iteratee(c)));
+  const excluded = new Set(arr2.map(iteratee));
+  return arr1.filter((c) => !excluded.has(iteratee(c)));
 }
 
 /**
  * Utility function that returns an array of unique values from a given array
  */
 export function uniqBy<T>(arr: T[], iteratee: (value: T) => unknown) {
-  return arr.filter((x, i, self) => i === self.findIndex((y) => iteratee(x) === iteratee(y)));
+  const seen = new Set<unknown>();
+  return arr.filter((x) => {
+    const key = iteratee(x);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**

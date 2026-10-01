@@ -13,16 +13,36 @@ import { DataTableLoader } from './DataTableLoader';
 import { DataTablePagination } from './DataTablePagination';
 import { DataTableRow } from './DataTableRow';
 import { DataTableScrollArea } from './DataTableScrollArea';
+import { DataTableSpacerRow } from './DataTableSpacerRow';
 import {
   useDataTableColumns,
   useDataTableInjectCssVariables,
   useDataTablePinnedColumns,
   useLastSelectionChangeIndex,
   useRowExpansion,
+  useRowVirtualization,
 } from './hooks';
 import type { DataTableProps } from './types';
 import { TEXT_SELECTION_DISABLED } from './utilityClasses';
 import { differenceBy, flattenColumns, getRecordId, uniqBy } from './utils';
+
+const defaultGetRecordSelectionCheckboxProps: NonNullable<
+  DataTableProps<unknown>['getRecordSelectionCheckboxProps']
+> = (_, index) => ({ 'aria-label': `Select record ${index + 1}` });
+
+const defaultPaginationText: NonNullable<DataTableProps<unknown>['paginationText']> = ({ from, to, totalRecords }) =>
+  `${from} - ${to} / ${totalRecords}`;
+
+const defaultGetPaginationControlProps: NonNullable<DataTableProps<unknown>['getPaginationControlProps']> = (
+  control
+) => {
+  if (control === 'previous') {
+    return { 'aria-label': 'Previous page' };
+  } else if (control === 'next') {
+    return { 'aria-label': 'Next page' };
+  }
+  return {};
+};
 
 export function DataTable<T>({
   withTableBorder,
@@ -51,7 +71,7 @@ export function DataTable<T>({
   isRecordSelectable,
   selectionCheckboxProps,
   allRecordsSelectionCheckboxProps = { 'aria-label': 'Select all records' },
-  getRecordSelectionCheckboxProps = (_, index) => ({ 'aria-label': `Select record ${index + 1}` }),
+  getRecordSelectionCheckboxProps = defaultGetRecordSelectionCheckboxProps,
   sortStatus,
   sortIcons,
   onSortStatusChange,
@@ -68,16 +88,9 @@ export function DataTable<T>({
   paginationActiveTextColor,
   paginationActiveBackgroundColor,
   paginationSize = 'sm',
-  paginationText = ({ from, to, totalRecords }) => `${from} - ${to} / ${totalRecords}`,
+  paginationText = defaultPaginationText,
   paginationWrapBreakpoint = 'sm',
-  getPaginationControlProps = (control) => {
-    if (control === 'previous') {
-      return { 'aria-label': 'Previous page' };
-    } else if (control === 'next') {
-      return { 'aria-label': 'Next page' };
-    }
-    return {};
-  },
+  getPaginationControlProps = defaultGetPaginationControlProps,
   getPaginationItemProps,
   renderPagination,
   loaderBackgroundBlur,
@@ -132,13 +145,27 @@ export function DataTable<T>({
   styles,
   rowFactory,
   tableWrapper,
+  virtualized,
+  virtualizedRowHeight = 40,
+  virtualizedOverscan = 15,
+  virtualizerRef,
   ...otherProps
 }: DataTableProps<T>) {
   const flatColumns = useMemo(() => {
     return groups ? flattenColumns(groups) : columns!;
   }, [columns, groups]);
 
-  const { refs, onScroll: handleScrollPositionChange } = useDataTableInjectCssVariables({
+  const {
+    refs: {
+      root: rootElementRef,
+      table: tableElementRef,
+      scrollViewport: scrollViewportElementRef,
+      header: headerElementRef,
+      footer: footerElementRef,
+      selectionColumnHeader: selectionColumnHeaderElementRef,
+    },
+    onScroll: handleScrollPositionChange,
+  } = useDataTableInjectCssVariables({
     scrollCallbacks: {
       onScroll,
       onScrollToTop,
@@ -152,25 +179,26 @@ export function DataTable<T>({
   const dragToggle = useDataTableColumns({
     key: storeColumnsKey,
     columns: flatColumns,
-    headerRef: refs.header as RefObject<HTMLTableSectionElement | null>,
-    scrollViewportRef: refs.scrollViewport as RefObject<HTMLElement | null>,
+    headerRef: headerElementRef as RefObject<HTMLTableSectionElement | null>,
+    scrollViewportRef: scrollViewportElementRef as RefObject<HTMLElement | null>,
   });
 
   // Use the columns enriched with order/visibility/width from the hook so
   // resize widths actually reach the rendered <th>/<td> cells.
   const effectiveColumns = dragToggle.effectiveColumns;
+  const hasFooter = effectiveColumns.some(({ footer }) => footer);
 
-  const mergedTableRef = useMergedRef(refs.table, tableRef);
-  const mergedViewportRef = useMergedRef(refs.scrollViewport, scrollViewportRef);
+  const mergedTableRef = useMergedRef(tableElementRef, tableRef);
+  const mergedViewportRef = useMergedRef(scrollViewportElementRef, scrollViewportRef);
   const internalBodyRef = useRef<HTMLTableSectionElement>(null);
   const mergedBodyRef = useMergedRef(internalBodyRef, bodyRef);
   const rowExpansionInfo = useRowExpansion<T>({ rowExpansion, records, idAccessor });
 
   const { pinnedMap, hasLeftPinned, hasRightPinned } = useDataTablePinnedColumns({
     columns: effectiveColumns,
-    theadRef: refs.header as RefObject<HTMLTableSectionElement | null>,
+    theadRef: headerElementRef as RefObject<HTMLTableSectionElement | null>,
     tbodyRef: internalBodyRef,
-    selectionColumnHeaderRef: refs.selectionColumnHeader as RefObject<HTMLTableCellElement | null>,
+    selectionColumnHeaderRef: selectionColumnHeaderElementRef as RefObject<HTMLTableCellElement | null>,
     selectionVisible: !!selectedRecords,
     pinFirstColumn,
     pinLastColumn,
@@ -201,13 +229,35 @@ export function DataTable<T>({
 
   const recordsLength = records?.length;
 
+  // Memoized, because the virtualizer uses `getItemKey`'s identity as a cache key for the full
+  // `count`-sized measurement array; an inline arrow would rebuild it on every render, i.e. on
+  // every scroll frame.
+  const getVirtualItemKey = useMemo(
+    () => (records ? (index: number) => getRecordId(records[index], idAccessor) as string | number : undefined),
+    [records, idAccessor]
+  );
+
+  const rowVirtualization = useRowVirtualization({
+    enabled: !!virtualized,
+    count: recordsLength ?? 0,
+    scrollViewportRef: scrollViewportElementRef as RefObject<HTMLElement | null>,
+    headerRef: headerElementRef as RefObject<HTMLElement | null>,
+    footerRef: footerElementRef as RefObject<HTMLElement | null>,
+    hasHeader: !noHeader,
+    hasFooter,
+    rowHeight: virtualizedRowHeight,
+    overscan: virtualizedOverscan,
+    getItemKey: getVirtualItemKey,
+    virtualizerRef,
+  });
+
   // Reset scroll position when changing pages (sync) or when records change (async)
   useLayoutEffect(() => {
     if (!resetScrollPending.current) return;
     if (fetching) return;
     if (records === recordsAtPageChangeRef.current) return;
 
-    const viewport = refs.scrollViewport.current;
+    const viewport = scrollViewportElementRef.current;
     if (!viewport) return;
 
     const raf = requestAnimationFrame(() => {
@@ -216,27 +266,40 @@ export function DataTable<T>({
     });
 
     return () => cancelAnimationFrame(raf);
-  }, [fetching, records, refs.scrollViewport]);
+  }, [fetching, records, scrollViewportElementRef]);
 
-  const recordIds = records?.map((record) => getRecordId(record, idAccessor));
+  // The virtualizer re-renders the component on every scroll frame, so anything derived from
+  // records/selectedRecords must be memoized and selection lookups must be O(1); otherwise
+  // large datasets with selection enabled degrade to quadratic work per frame.
+  const recordIds = useMemo(() => records?.map((record) => getRecordId(record, idAccessor)), [records, idAccessor]);
   const selectionColumnVisible = !!selectedRecords;
-  const selectedRecordIds = selectedRecords?.map((record) => getRecordId(record, idAccessor));
+  const selectedRecordIdsSet = useMemo(
+    () => (selectedRecords ? new Set(selectedRecords.map((record) => getRecordId(record, idAccessor))) : undefined),
+    [selectedRecords, idAccessor]
+  );
   const hasRecordsAndSelectedRecords =
-    recordIds !== undefined && selectedRecordIds !== undefined && selectedRecordIds.length > 0;
+    recordIds !== undefined && selectedRecordIdsSet !== undefined && selectedRecordIdsSet.size > 0;
 
-  const selectableRecords = isRecordSelectable ? records?.filter(isRecordSelectable) : records;
-  const selectableRecordIds = selectableRecords?.map((record) => getRecordId(record, idAccessor));
+  const selectableRecords = useMemo(
+    () => (isRecordSelectable ? records?.filter(isRecordSelectable) : records),
+    [records, isRecordSelectable]
+  );
+  const selectableRecordIds = useMemo(
+    () => selectableRecords?.map((record) => getRecordId(record, idAccessor)),
+    [selectableRecords, idAccessor]
+  );
 
   const allSelectableRecordsSelected =
-    hasRecordsAndSelectedRecords && selectableRecordIds!.every((id) => selectedRecordIds.includes(id));
+    hasRecordsAndSelectedRecords && selectableRecordIds!.every((id) => selectedRecordIdsSet.has(id));
   const someRecordsSelected =
-    hasRecordsAndSelectedRecords && selectableRecordIds!.some((id) => selectedRecordIds.includes(id));
+    hasRecordsAndSelectedRecords && selectableRecordIds!.some((id) => selectedRecordIdsSet.has(id));
 
   const handleHeaderSelectionChange = useCallback(() => {
     if (selectedRecords && onSelectedRecordsChange) {
+      const selectableRecordIdsSet = new Set(selectableRecordIds);
       onSelectedRecordsChange(
         allSelectableRecordsSelected
-          ? selectedRecords.filter((record) => !selectableRecordIds!.includes(getRecordId(record, idAccessor)))
+          ? selectedRecords.filter((record) => !selectableRecordIdsSet.has(getRecordId(record, idAccessor)))
           : uniqBy([...selectedRecords, ...selectableRecords!], (record) => getRecordId(record, idAccessor))
       );
     }
@@ -254,6 +317,90 @@ export function DataTable<T>({
 
   const marginProperties = { m, my, mx, mt, mb, ml, mr };
 
+  const spacerRowColSpan = effectiveColumns.filter(({ hidden }) => !hidden).length + (selectionColumnVisible ? 1 : 0);
+
+  const renderRow = (record: T, index: number) => {
+    const recordId = getRecordId(record, idAccessor);
+    const isSelected = selectedRecordIdsSet?.has(recordId) || false;
+
+    let handleSelectionChange: React.MouseEventHandler | undefined;
+
+    if (onSelectedRecordsChange && selectedRecords) {
+      handleSelectionChange = (e) => {
+        if (e.nativeEvent.shiftKey && lastSelectionChangeIndex !== null) {
+          const targetRecords = records!.filter(
+            index > lastSelectionChangeIndex
+              ? (rec, idx) =>
+                  idx >= lastSelectionChangeIndex &&
+                  idx <= index &&
+                  (isRecordSelectable ? isRecordSelectable(rec, idx) : true)
+              : (rec, idx) =>
+                  idx >= index &&
+                  idx <= lastSelectionChangeIndex &&
+                  (isRecordSelectable ? isRecordSelectable(rec, idx) : true)
+          );
+          onSelectedRecordsChange(
+            isSelected
+              ? differenceBy(selectedRecords, targetRecords, (r) => getRecordId(r, idAccessor))
+              : uniqBy([...selectedRecords, ...targetRecords], (r) => getRecordId(r, idAccessor))
+          );
+        } else {
+          onSelectedRecordsChange(
+            isSelected
+              ? selectedRecords.filter((rec) => getRecordId(rec, idAccessor) !== recordId)
+              : uniqBy([...selectedRecords, record], (rec) => getRecordId(rec, idAccessor))
+          );
+        }
+        setLastSelectionChangeIndex(index);
+      };
+    }
+
+    return (
+      <DataTableRow<T>
+        key={recordId as React.Key}
+        record={record}
+        index={index}
+        columns={effectiveColumns}
+        defaultColumnProps={defaultColumnProps}
+        pinnedMap={pinnedMap}
+        defaultColumnRender={defaultColumnRender}
+        selectionTrigger={selectionTrigger}
+        selectionVisible={selectionColumnVisible}
+        selectionChecked={isSelected}
+        onSelectionChange={handleSelectionChange}
+        isRecordSelectable={isRecordSelectable}
+        selectionCheckboxProps={selectionCheckboxProps}
+        getSelectionCheckboxProps={getRecordSelectionCheckboxProps}
+        onClick={onRowClick}
+        onDoubleClick={onRowDoubleClick}
+        onCellClick={onCellClick}
+        onCellDoubleClick={onCellDoubleClick}
+        onContextMenu={onRowContextMenu}
+        onCellContextMenu={onCellContextMenu}
+        expansion={rowExpansionInfo}
+        color={rowColor}
+        backgroundColor={rowBackgroundColor}
+        className={rowClassName}
+        style={rowStyle}
+        customAttributes={customRowAttributes}
+        selectorCellShadowVisible={selectorCellShadowVisible}
+        selectionColumnClassName={selectionColumnClassName}
+        selectionColumnStyle={selectionColumnStyle}
+        idAccessor={idAccessor as string}
+        rowFactory={rowFactory}
+        virtualization={
+          rowVirtualization
+            ? {
+                measureRef: rowVirtualization.measureRef,
+                expansionRowRef: rowVirtualization.expansionRowRef,
+                odd: index % 2 === 0,
+              }
+            : undefined
+        }
+      />
+    );
+  };
+
   const TableWrapper = useCallback(
     ({ children }: { children: React.ReactNode }) => {
       if (tableWrapper) return tableWrapper({ children });
@@ -265,7 +412,7 @@ export function DataTable<T>({
   return (
     <DataTableColumnsProvider {...dragToggle} pinnedMap={pinnedMap}>
       <Box
-        ref={refs.root}
+        ref={rootElementRef}
         {...marginProperties}
         className={clsx(
           'mantine-datatable',
@@ -328,13 +475,14 @@ export function DataTable<T>({
               }}
               data-striped={(recordsLength && striped) || undefined}
               data-highlight-on-hover={highlightOnHover || undefined}
+              data-virtualized={virtualized || undefined}
               {...otherProps}
             >
               {noHeader ? null : (
                 <DataTableColumnsProvider {...dragToggle} pinnedMap={pinnedMap}>
                   <DataTableHeader<T>
-                    ref={refs.header}
-                    selectionColumnHeaderRef={refs.selectionColumnHeader}
+                    ref={headerElementRef}
+                    selectionColumnHeaderRef={selectionColumnHeaderElementRef}
                     className={classNames?.header}
                     style={styles?.header}
                     columns={effectiveColumns}
@@ -359,86 +507,27 @@ export function DataTable<T>({
               )}
               <tbody ref={mergedBodyRef}>
                 {recordsLength ? (
-                  records.map((record, index) => {
-                    const recordId = getRecordId(record, idAccessor);
-                    const isSelected = selectedRecordIds?.includes(recordId) || false;
-
-                    let handleSelectionChange: React.MouseEventHandler | undefined;
-
-                    if (onSelectedRecordsChange && selectedRecords) {
-                      handleSelectionChange = (e) => {
-                        if (e.nativeEvent.shiftKey && lastSelectionChangeIndex !== null) {
-                          const targetRecords = records.filter(
-                            index > lastSelectionChangeIndex
-                              ? (rec, idx) =>
-                                  idx >= lastSelectionChangeIndex &&
-                                  idx <= index &&
-                                  (isRecordSelectable ? isRecordSelectable(rec, idx) : true)
-                              : (rec, idx) =>
-                                  idx >= index &&
-                                  idx <= lastSelectionChangeIndex &&
-                                  (isRecordSelectable ? isRecordSelectable(rec, idx) : true)
-                          );
-                          onSelectedRecordsChange(
-                            isSelected
-                              ? differenceBy(selectedRecords, targetRecords, (r) => getRecordId(r, idAccessor))
-                              : uniqBy([...selectedRecords, ...targetRecords], (r) => getRecordId(r, idAccessor))
-                          );
-                        } else {
-                          onSelectedRecordsChange(
-                            isSelected
-                              ? selectedRecords.filter((rec) => getRecordId(rec, idAccessor) !== recordId)
-                              : uniqBy([...selectedRecords, record], (rec) => getRecordId(rec, idAccessor))
-                          );
-                        }
-                        setLastSelectionChangeIndex(index);
-                      };
-                    }
-
-                    return (
-                      <DataTableRow<T>
-                        key={recordId as React.Key}
-                        record={record}
-                        index={index}
-                        columns={effectiveColumns}
-                        defaultColumnProps={defaultColumnProps}
-                        pinnedMap={pinnedMap}
-                        defaultColumnRender={defaultColumnRender}
-                        selectionTrigger={selectionTrigger}
-                        selectionVisible={selectionColumnVisible}
-                        selectionChecked={isSelected}
-                        onSelectionChange={handleSelectionChange}
-                        isRecordSelectable={isRecordSelectable}
-                        selectionCheckboxProps={selectionCheckboxProps}
-                        getSelectionCheckboxProps={getRecordSelectionCheckboxProps}
-                        onClick={onRowClick}
-                        onDoubleClick={onRowDoubleClick}
-                        onCellClick={onCellClick}
-                        onCellDoubleClick={onCellDoubleClick}
-                        onContextMenu={onRowContextMenu}
-                        onCellContextMenu={onCellContextMenu}
-                        expansion={rowExpansionInfo}
-                        color={rowColor}
-                        backgroundColor={rowBackgroundColor}
-                        className={rowClassName}
-                        style={rowStyle}
-                        customAttributes={customRowAttributes}
-                        selectorCellShadowVisible={selectorCellShadowVisible}
-                        selectionColumnClassName={selectionColumnClassName}
-                        selectionColumnStyle={selectionColumnStyle}
-                        idAccessor={idAccessor as string}
-                        rowFactory={rowFactory}
-                      />
-                    );
-                  })
+                  rowVirtualization ? (
+                    <>
+                      {rowVirtualization.paddingTop > 0 && (
+                        <DataTableSpacerRow height={rowVirtualization.paddingTop} colSpan={spacerRowColSpan} />
+                      )}
+                      {rowVirtualization.virtualItems.map(({ index }) => renderRow(records![index], index))}
+                      {rowVirtualization.paddingBottom > 0 && (
+                        <DataTableSpacerRow height={rowVirtualization.paddingBottom} colSpan={spacerRowColSpan} />
+                      )}
+                    </>
+                  ) : (
+                    records.map((record, index) => renderRow(record, index))
+                  )
                 ) : (
                   <DataTableEmptyRow />
                 )}
               </tbody>
 
-              {effectiveColumns.some(({ footer }) => footer) && (
+              {hasFooter && (
                 <DataTableFooter<T>
-                  ref={refs.footer}
+                  ref={footerElementRef}
                   className={classNames?.footer}
                   style={styles?.footer}
                   columns={effectiveColumns}

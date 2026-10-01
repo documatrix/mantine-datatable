@@ -20,6 +20,7 @@ import type { DataTableScrollProps } from './DataTableScrollProps';
 import type { DataTableSelectionProps } from './DataTableSelectionProps';
 import type { DataTableSortProps } from './DataTableSortProps';
 import type { DataTableVerticalAlign } from './DataTableVerticalAlign';
+import type { DataTableVirtualizationProps } from './DataTableVirtualizationProps';
 
 export type DataTableProps<T = Record<string, unknown>> = {
   /**
@@ -281,4 +282,5 @@ export type DataTableProps<T = Record<string, unknown>> = {
   DataTablePaginationProps &
   DataTableSortProps<T> &
   DataTableScrollProps &
-  DataTableSelectionProps<T>;
+  DataTableSelectionProps<T> &
+  DataTableVirtualizationProps;

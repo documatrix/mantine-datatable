@@ -52,6 +52,11 @@ type DataTableRowProps<T> = {
   selectionColumnClassName: string | undefined;
   selectionColumnStyle: MantineStyleProp | undefined;
   idAccessor: string;
+  virtualization?: {
+    measureRef: (element: HTMLTableRowElement | null) => void;
+    expansionRowRef: (element: HTMLTableRowElement | null) => (() => void) | undefined;
+    odd: boolean;
+  };
 } & Pick<DataTableProps<T>, 'rowFactory'>;
 
 export function DataTableRow<T>({
@@ -84,6 +89,7 @@ export function DataTableRow<T>({
   selectionColumnClassName,
   selectionColumnStyle,
   rowFactory,
+  virtualization,
 }: Readonly<DataTableRowProps<T>>) {
   const cols = (
     <>
@@ -163,10 +169,12 @@ export function DataTableRow<T>({
       open={expansion.isRowExpanded(record)}
       content={expansion.content({ record, index })}
       collapseProps={expansion.collapseProps}
+      virtualizedOdd={virtualization?.odd}
+      rowRef={virtualization?.expansionRowRef}
     />
   );
 
-  const rowProps = getRowProps({
+  const baseRowProps = getRowProps({
     record,
     index,
     selectionChecked,
@@ -180,6 +188,18 @@ export function DataTableRow<T>({
     className,
     style,
   });
+
+  // The virtualizer measures rendered rows through the ref and locates them by `data-index`;
+  // `data-odd` drives index-based striping, since `:nth-of-type` parity breaks when only a
+  // window of rows is present in the DOM.
+  const rowProps = virtualization
+    ? {
+        ...baseRowProps,
+        ref: virtualization.measureRef,
+        'data-index': index,
+        'data-odd': virtualization.odd || undefined,
+      }
+    : baseRowProps;
 
   if (rowFactory) {
     return rowFactory({
