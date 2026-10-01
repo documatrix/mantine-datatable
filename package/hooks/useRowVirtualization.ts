@@ -1,15 +1,23 @@
-import { useVirtualizer, type VirtualItem, type Virtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useState } from 'react';
-import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
+import {
+  useVirtualizer,
+  type VirtualItem,
+  type Virtualizer,
+} from "@tanstack/react-virtual";
+import { useCallback, useEffect, useState } from "react";
+import { useIsomorphicLayoutEffect } from "./useIsomorphicLayoutEffect";
 
 type UseRowVirtualizationOptions = {
   enabled: boolean;
   count: number;
   scrollViewportRef: React.RefObject<HTMLElement | null>;
+  headerRef: React.RefObject<HTMLElement | null>;
+  footerRef: React.RefObject<HTMLElement | null>;
   rowHeight: number;
   overscan: number;
   getItemKey: ((index: number) => string | number) | undefined;
-  virtualizerRef: React.RefObject<Virtualizer<HTMLElement, HTMLTableRowElement> | null> | undefined;
+  virtualizerRef:
+    | React.RefObject<Virtualizer<HTMLElement, HTMLTableRowElement> | null>
+    | undefined;
 };
 
 export type RowVirtualizationInfo = {
@@ -29,7 +37,9 @@ export type RowVirtualizationInfo = {
   /**
    * Ref callback for row expansion rows; remeasures the row they belong to when they change height.
    */
-  expansionRowRef: (element: HTMLTableRowElement | null) => (() => void) | undefined;
+  expansionRowRef: (
+    element: HTMLTableRowElement | null,
+  ) => (() => void) | undefined;
 };
 
 /**
@@ -41,9 +51,9 @@ function measureRowWithTrailingSiblings(element: HTMLTableRowElement) {
   let sibling = element.nextElementSibling;
   while (
     sibling &&
-    !sibling.classList.contains('mantine-datatable-row') &&
-    !sibling.classList.contains('mantine-datatable-spacer-row') &&
-    !sibling.classList.contains('mantine-datatable-empty-row')
+    !sibling.classList.contains("mantine-datatable-row") &&
+    !sibling.classList.contains("mantine-datatable-spacer-row") &&
+    !sibling.classList.contains("mantine-datatable-empty-row")
   ) {
     height += sibling.getBoundingClientRect().height;
     sibling = sibling.nextElementSibling;
@@ -55,6 +65,8 @@ export function useRowVirtualization({
   enabled,
   count,
   scrollViewportRef,
+  headerRef,
+  footerRef,
   rowHeight,
   overscan,
   getItemKey,
@@ -68,12 +80,39 @@ export function useRowVirtualization({
     setScrollElement(scrollViewportRef.current);
   }, [scrollViewportRef]);
 
+  // The sticky header and footer cover the bottom of the scrolled-to range, as tbody starts below the header.
+  const [stickyHeight, setStickyHeight] = useState(0);
+
+  useIsomorphicLayoutEffect(() => {
+    if (!enabled || typeof ResizeObserver === "undefined") return;
+
+    const elements = [headerRef.current, footerRef.current].filter(
+      (element) => element !== null,
+    );
+    const update = () =>
+      setStickyHeight(
+        elements.reduce(
+          (sum, element) => sum + element.getBoundingClientRect().height,
+          0,
+        ),
+      );
+
+    update();
+
+    const observer = new ResizeObserver(update);
+
+    for (const element of elements) observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [enabled, headerRef, footerRef]);
+
   const virtualizer = useVirtualizer<HTMLElement, HTMLTableRowElement>({
     count,
     enabled,
     getScrollElement: () => scrollElement,
     estimateSize: () => rowHeight,
     overscan,
+    scrollPaddingEnd: stickyHeight,
     // Key the measurement cache by record id, so measured heights (e.g. of expanded rows)
     // follow their records when the data is re-sorted or mutated.
     getItemKey,
@@ -92,28 +131,36 @@ export function useRowVirtualization({
 
   // Measuring can make the virtualizer flushSync, which React forbids (and warns about) inside ref callbacks.
   const measureRef = useCallback(
-    (element: HTMLTableRowElement | null) => queueMicrotask(() => virtualizer.measureElement(element)),
-    [virtualizer]
+    (element: HTMLTableRowElement | null) =>
+      queueMicrotask(() => virtualizer.measureElement(element)),
+    [virtualizer],
   );
 
   // The virtualizer only observes the rows themselves, so it never notices a row expansion row
   // changing height; observe it and remeasure its row on every change.
   const expansionRowRef = useCallback(
     (element: HTMLTableRowElement | null) => {
-      if (!element || typeof ResizeObserver === 'undefined') return;
+      if (!element || typeof ResizeObserver === "undefined") return;
       let sibling = element.previousElementSibling;
-      while (sibling && !sibling.classList.contains('mantine-datatable-row')) sibling = sibling.previousElementSibling;
+      while (sibling && !sibling.classList.contains("mantine-datatable-row"))
+        sibling = sibling.previousElementSibling;
       if (!(sibling instanceof HTMLTableRowElement)) return;
       const row = sibling;
       const remeasure = () => {
         if (!row.isConnected) return;
-        virtualizer.resizeItem(virtualizer.indexFromElement(row), measureRowWithTrailingSiblings(row));
+        virtualizer.resizeItem(
+          virtualizer.indexFromElement(row),
+          measureRowWithTrailingSiblings(row),
+        );
       };
       const observer = new ResizeObserver(remeasure);
       observer.observe(element);
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+        requestAnimationFrame(remeasure);
+      };
     },
-    [virtualizer]
+    [virtualizer],
   );
 
   if (!enabled) return null;
@@ -123,7 +170,10 @@ export function useRowVirtualization({
   return {
     virtualItems,
     paddingTop: virtualItems.length > 0 ? virtualItems[0].start : 0,
-    paddingBottom: virtualItems.length > 0 ? virtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end : 0,
+    paddingBottom:
+      virtualItems.length > 0
+        ? virtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end
+        : 0,
     measureRef,
     expansionRowRef,
   };

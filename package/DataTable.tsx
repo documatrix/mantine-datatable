@@ -240,6 +240,8 @@ export function DataTable<T>({
     enabled: !!virtualized,
     count: recordsLength ?? 0,
     scrollViewportRef: scrollViewportElementRef as RefObject<HTMLElement | null>,
+    headerRef: headerElementRef as RefObject<HTMLElement | null>,
+    footerRef: footerElementRef as RefObject<HTMLElement | null>,
     rowHeight: virtualizedRowHeight,
     overscan: virtualizedOverscan,
     getItemKey: getVirtualItemKey,
