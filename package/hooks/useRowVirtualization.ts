@@ -12,6 +12,8 @@ type UseRowVirtualizationOptions = {
   scrollViewportRef: React.RefObject<HTMLElement | null>;
   headerRef: React.RefObject<HTMLElement | null>;
   footerRef: React.RefObject<HTMLElement | null>;
+  hasHeader: boolean;
+  hasFooter: boolean;
   rowHeight: number;
   overscan: number;
   getItemKey: ((index: number) => string | number) | undefined;
@@ -67,6 +69,8 @@ export function useRowVirtualization({
   scrollViewportRef,
   headerRef,
   footerRef,
+  hasHeader,
+  hasFooter,
   rowHeight,
   overscan,
   getItemKey,
@@ -104,7 +108,7 @@ export function useRowVirtualization({
     for (const element of elements) observer.observe(element);
 
     return () => observer.disconnect();
-  }, [enabled, headerRef, footerRef]);
+  }, [enabled, headerRef, footerRef, hasHeader, hasFooter]);
 
   const virtualizer = useVirtualizer<HTMLElement, HTMLTableRowElement>({
     count,

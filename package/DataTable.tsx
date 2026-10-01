@@ -186,6 +186,7 @@ export function DataTable<T>({
   // Use the columns enriched with order/visibility/width from the hook so
   // resize widths actually reach the rendered <th>/<td> cells.
   const effectiveColumns = dragToggle.effectiveColumns;
+  const hasFooter = effectiveColumns.some(({ footer }) => footer);
 
   const mergedTableRef = useMergedRef(tableElementRef, tableRef);
   const mergedViewportRef = useMergedRef(scrollViewportElementRef, scrollViewportRef);
@@ -242,6 +243,8 @@ export function DataTable<T>({
     scrollViewportRef: scrollViewportElementRef as RefObject<HTMLElement | null>,
     headerRef: headerElementRef as RefObject<HTMLElement | null>,
     footerRef: footerElementRef as RefObject<HTMLElement | null>,
+    hasHeader: !noHeader,
+    hasFooter,
     rowHeight: virtualizedRowHeight,
     overscan: virtualizedOverscan,
     getItemKey: getVirtualItemKey,
@@ -522,7 +525,7 @@ export function DataTable<T>({
                 )}
               </tbody>
 
-              {effectiveColumns.some(({ footer }) => footer) && (
+              {hasFooter && (
                 <DataTableFooter<T>
                   ref={footerElementRef}
                   className={classNames?.footer}
