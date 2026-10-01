@@ -26,6 +26,10 @@ export type RowVirtualizationInfo = {
    * Ref callback measuring rendered rows; rows must also carry a `data-index` attribute.
    */
   measureRef: (element: HTMLTableRowElement | null) => void;
+  /**
+   * Ref callback for row expansion rows; remeasures the row they belong to when they change height.
+   */
+  expansionRowRef: (element: HTMLTableRowElement | null) => (() => void) | undefined;
 };
 
 /**
@@ -92,6 +96,26 @@ export function useRowVirtualization({
     [virtualizer]
   );
 
+  // The virtualizer only observes the rows themselves, so it never notices a row expansion row
+  // changing height; observe it and remeasure its row on every change.
+  const expansionRowRef = useCallback(
+    (element: HTMLTableRowElement | null) => {
+      if (!element || typeof ResizeObserver === 'undefined') return;
+      let sibling = element.previousElementSibling;
+      while (sibling && !sibling.classList.contains('mantine-datatable-row')) sibling = sibling.previousElementSibling;
+      if (!(sibling instanceof HTMLTableRowElement)) return;
+      const row = sibling;
+      const remeasure = () => {
+        if (!row.isConnected) return;
+        virtualizer.resizeItem(virtualizer.indexFromElement(row), measureRowWithTrailingSiblings(row));
+      };
+      const observer = new ResizeObserver(remeasure);
+      observer.observe(element);
+      return () => observer.disconnect();
+    },
+    [virtualizer]
+  );
+
   if (!enabled) return null;
 
   const virtualItems = virtualizer.getVirtualItems();
@@ -101,5 +125,6 @@ export function useRowVirtualization({
     paddingTop: virtualItems.length > 0 ? virtualItems[0].start : 0,
     paddingBottom: virtualItems.length > 0 ? virtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end : 0,
     measureRef,
+    expansionRowRef,
   };
 }

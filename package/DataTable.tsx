@@ -228,13 +228,21 @@ export function DataTable<T>({
 
   const recordsLength = records?.length;
 
+  // Memoized, because the virtualizer uses `getItemKey`'s identity as a cache key for the full
+  // `count`-sized measurement array; an inline arrow would rebuild it on every render, i.e. on
+  // every scroll frame.
+  const getVirtualItemKey = useMemo(
+    () => (records ? (index: number) => getRecordId(records[index], idAccessor) as string | number : undefined),
+    [records, idAccessor]
+  );
+
   const rowVirtualization = useRowVirtualization({
     enabled: !!virtualized,
     count: recordsLength ?? 0,
     scrollViewportRef: scrollViewportElementRef as RefObject<HTMLElement | null>,
     rowHeight: virtualizedRowHeight,
     overscan: virtualizedOverscan,
-    getItemKey: records ? (index) => getRecordId(records[index], idAccessor) as string | number : undefined,
+    getItemKey: getVirtualItemKey,
     virtualizerRef,
   });
 
@@ -376,7 +384,13 @@ export function DataTable<T>({
         idAccessor={idAccessor as string}
         rowFactory={rowFactory}
         virtualization={
-          rowVirtualization ? { measureRef: rowVirtualization.measureRef, odd: index % 2 === 0 } : undefined
+          rowVirtualization
+            ? {
+                measureRef: rowVirtualization.measureRef,
+                expansionRowRef: rowVirtualization.expansionRowRef,
+                odd: index % 2 === 0,
+              }
+            : undefined
         }
       />
     );

@@ -13,6 +13,11 @@ type DataTableRowExpansionProps = {
    * `:nth-of-type`-based striping does in the non-virtualized mode.
    */
   virtualizedOdd?: boolean;
+  /**
+   * Ref on the row holding the expansion content; used by virtualization to remeasure the
+   * parent row when the expansion row changes height.
+   */
+  rowRef?: React.Ref<HTMLTableRowElement>;
 };
 
 export function DataTableRowExpansion({
@@ -21,6 +26,7 @@ export function DataTableRowExpansion({
   content,
   collapseProps,
   virtualizedOdd,
+  rowRef,
 }: DataTableRowExpansionProps) {
   const { expanded, visible } = useRowExpansionStatus(open, collapseProps?.transitionDuration);
 
@@ -28,7 +34,7 @@ export function DataTableRowExpansion({
     <>
       {/* add an empty row to maintain striped rows consistency */}
       <TableTr />
-      <TableTr data-odd={virtualizedOdd || undefined}>
+      <TableTr ref={rowRef} data-odd={virtualizedOdd || undefined}>
         <TableTd className="mantine-datatable-row-expansion-cell" colSpan={colSpan}>
           <Collapse expanded={expanded} {...collapseProps}>
             <div className="mantine-datatable-row-expansion-cell-content">{content()}</div>

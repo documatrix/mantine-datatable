@@ -54,6 +54,7 @@ type DataTableRowProps<T> = {
   idAccessor: string;
   virtualization?: {
     measureRef: (element: HTMLTableRowElement | null) => void;
+    expansionRowRef: (element: HTMLTableRowElement | null) => (() => void) | undefined;
     odd: boolean;
   };
 } & Pick<DataTableProps<T>, 'rowFactory'>;
@@ -169,6 +170,7 @@ export function DataTableRow<T>({
       content={expansion.content({ record, index })}
       collapseProps={expansion.collapseProps}
       virtualizedOdd={virtualization?.odd}
+      rowRef={virtualization?.expansionRowRef}
     />
   );
 
