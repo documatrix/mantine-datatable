@@ -1,5 +1,5 @@
 import { Box, type MantineSize, Table } from '@mantine/core';
-import { useMergedRef } from '@mantine/hooks';
+import { useCallbackRef, useMergedRef } from '@mantine/hooks';
 import clsx from 'clsx';
 import type { RefObject } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
@@ -19,12 +19,17 @@ import {
   useDataTableInjectCssVariables,
   useDataTablePinnedColumns,
   useLastSelectionChangeIndex,
+  useOptionalCallbackRef,
   useRowExpansion,
   useRowVirtualization,
 } from './hooks';
 import type { DataTableProps } from './types';
 import { TEXT_SELECTION_DISABLED } from './utilityClasses';
 import { differenceBy, flattenColumns, getRecordId, uniqBy } from './utils';
+
+const defaultAllRecordsSelectionCheckboxProps: NonNullable<
+  DataTableProps<unknown>['allRecordsSelectionCheckboxProps']
+> = { 'aria-label': 'Select all records' };
 
 const defaultGetRecordSelectionCheckboxProps: NonNullable<
   DataTableProps<unknown>['getRecordSelectionCheckboxProps']
@@ -70,7 +75,7 @@ export function DataTable<T>({
   selectionColumnStyle,
   isRecordSelectable,
   selectionCheckboxProps,
-  allRecordsSelectionCheckboxProps = { 'aria-label': 'Select all records' },
+  allRecordsSelectionCheckboxProps = defaultAllRecordsSelectionCheckboxProps,
   getRecordSelectionCheckboxProps = defaultGetRecordSelectionCheckboxProps,
   sortStatus,
   sortIcons,
@@ -312,7 +317,50 @@ export function DataTable<T>({
     selectedRecords,
   ]);
 
-  const { lastSelectionChangeIndex, setLastSelectionChangeIndex } = useLastSelectionChangeIndex(recordIds);
+  const lastSelectionChangeIndexRef = useLastSelectionChangeIndex(recordIds);
+
+  // Rows receive this one function for the lifetime of the table and bind their own record/index;
+  // it reads the latest selection through the callback ref, so a selection change re-renders only
+  // the rows whose `selectionChecked` actually flipped.
+  const handleRecordSelectionChange = useCallbackRef((record: T, index: number, event: React.MouseEvent) => {
+    if (!selectedRecords || !onSelectedRecordsChange) return;
+
+    const recordId = getRecordId(record, idAccessor);
+    const isSelected = selectedRecordIdsSet?.has(recordId) ?? false;
+    const lastSelectionChangeIndex = lastSelectionChangeIndexRef.current;
+
+    if (event.nativeEvent.shiftKey && lastSelectionChangeIndex !== null) {
+      const [from, to] =
+        index > lastSelectionChangeIndex ? [lastSelectionChangeIndex, index] : [index, lastSelectionChangeIndex];
+      const targetRecords = records!.filter(
+        (rec, idx) => idx >= from && idx <= to && (isRecordSelectable ? isRecordSelectable(rec, idx) : true)
+      );
+      onSelectedRecordsChange(
+        isSelected
+          ? differenceBy(selectedRecords, targetRecords, (r) => getRecordId(r, idAccessor))
+          : uniqBy([...selectedRecords, ...targetRecords], (r) => getRecordId(r, idAccessor))
+      );
+    } else {
+      onSelectedRecordsChange(
+        isSelected
+          ? selectedRecords.filter((rec) => getRecordId(rec, idAccessor) !== recordId)
+          : uniqBy([...selectedRecords, record], (rec) => getRecordId(rec, idAccessor))
+      );
+    }
+    lastSelectionChangeIndexRef.current = index;
+  });
+  const rowSelectionChangeHandler =
+    selectedRecords && onSelectedRecordsChange ? handleRecordSelectionChange : undefined;
+
+  // Consumers commonly pass these inline; a new identity per parent render would otherwise
+  // re-render every row.
+  const stableOnRowClick = useOptionalCallbackRef(onRowClick);
+  const stableOnRowDoubleClick = useOptionalCallbackRef(onRowDoubleClick);
+  const stableOnRowContextMenu = useOptionalCallbackRef(onRowContextMenu);
+  const stableOnCellClick = useOptionalCallbackRef(onCellClick);
+  const stableOnCellDoubleClick = useOptionalCallbackRef(onCellDoubleClick);
+  const stableOnCellContextMenu = useOptionalCallbackRef(onCellContextMenu);
+
   const selectorCellShadowVisible = selectionColumnVisible && !hasLeftPinned;
 
   const marginProperties = { m, my, mx, mt, mb, ml, mr };
@@ -321,39 +369,6 @@ export function DataTable<T>({
 
   const renderRow = (record: T, index: number) => {
     const recordId = getRecordId(record, idAccessor);
-    const isSelected = selectedRecordIdsSet?.has(recordId) || false;
-
-    let handleSelectionChange: React.MouseEventHandler | undefined;
-
-    if (onSelectedRecordsChange && selectedRecords) {
-      handleSelectionChange = (e) => {
-        if (e.nativeEvent.shiftKey && lastSelectionChangeIndex !== null) {
-          const targetRecords = records!.filter(
-            index > lastSelectionChangeIndex
-              ? (rec, idx) =>
-                  idx >= lastSelectionChangeIndex &&
-                  idx <= index &&
-                  (isRecordSelectable ? isRecordSelectable(rec, idx) : true)
-              : (rec, idx) =>
-                  idx >= index &&
-                  idx <= lastSelectionChangeIndex &&
-                  (isRecordSelectable ? isRecordSelectable(rec, idx) : true)
-          );
-          onSelectedRecordsChange(
-            isSelected
-              ? differenceBy(selectedRecords, targetRecords, (r) => getRecordId(r, idAccessor))
-              : uniqBy([...selectedRecords, ...targetRecords], (r) => getRecordId(r, idAccessor))
-          );
-        } else {
-          onSelectedRecordsChange(
-            isSelected
-              ? selectedRecords.filter((rec) => getRecordId(rec, idAccessor) !== recordId)
-              : uniqBy([...selectedRecords, record], (rec) => getRecordId(rec, idAccessor))
-          );
-        }
-        setLastSelectionChangeIndex(index);
-      };
-    }
 
     return (
       <DataTableRow<T>
@@ -366,17 +381,17 @@ export function DataTable<T>({
         defaultColumnRender={defaultColumnRender}
         selectionTrigger={selectionTrigger}
         selectionVisible={selectionColumnVisible}
-        selectionChecked={isSelected}
-        onSelectionChange={handleSelectionChange}
+        selectionChecked={selectedRecordIdsSet?.has(recordId) ?? false}
+        onSelectionChange={rowSelectionChangeHandler}
         isRecordSelectable={isRecordSelectable}
         selectionCheckboxProps={selectionCheckboxProps}
         getSelectionCheckboxProps={getRecordSelectionCheckboxProps}
-        onClick={onRowClick}
-        onDoubleClick={onRowDoubleClick}
-        onCellClick={onCellClick}
-        onCellDoubleClick={onCellDoubleClick}
-        onContextMenu={onRowContextMenu}
-        onCellContextMenu={onCellContextMenu}
+        onClick={stableOnRowClick}
+        onDoubleClick={stableOnRowDoubleClick}
+        onCellClick={stableOnCellClick}
+        onCellDoubleClick={stableOnCellDoubleClick}
+        onContextMenu={stableOnRowContextMenu}
+        onCellContextMenu={stableOnCellContextMenu}
         expansion={rowExpansionInfo}
         color={rowColor}
         backgroundColor={rowBackgroundColor}
@@ -388,15 +403,9 @@ export function DataTable<T>({
         selectionColumnStyle={selectionColumnStyle}
         idAccessor={idAccessor as string}
         rowFactory={rowFactory}
-        virtualization={
-          rowVirtualization
-            ? {
-                measureRef: rowVirtualization.measureRef,
-                expansionRowRef: rowVirtualization.expansionRowRef,
-                odd: index % 2 === 0,
-              }
-            : undefined
-        }
+        virtualizedMeasureRef={rowVirtualization?.measureRef}
+        virtualizedExpansionRowRef={rowVirtualization?.expansionRowRef}
+        virtualizedOdd={rowVirtualization ? index % 2 === 0 : undefined}
       />
     );
   };
