@@ -207,12 +207,14 @@ export type DataTableProps<T = Record<string, unknown>> = {
    * Optional style passed to each row.
    * a function that receives the current record, its index, default row props and expanded element as arguments
    * and returns a React node representing the row.
+   * When `virtualized` is enabled, `rowProps.ref` measures the row and must reach the rendered `tr`;
+   * combine it with any ref of your own, e.g. with `mergeRefs` from `@mantine/hooks`.
    */
   rowFactory?: (props: {
     record: T;
     index: number;
     children: React.ReactNode;
-    rowProps: TableTrProps;
+    rowProps: TableTrProps & { ref?: React.Ref<HTMLTableRowElement> };
     expandedElement?: React.ReactNode;
   }) => React.ReactNode;
 

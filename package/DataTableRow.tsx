@@ -6,7 +6,7 @@ import { getRowCssVariables } from './cssVariables';
 import { DataTableRowCell } from './DataTableRowCell';
 import { DataTableRowExpansion } from './DataTableRowExpansion';
 import { DataTableRowSelectorCell } from './DataTableRowSelectorCell';
-import type { PinnedColumnInfo, useRowExpansion } from './hooks';
+import type { PinnedColumnInfo, RowExpansionInfo } from './hooks';
 import type {
   DataTableCellClickHandler,
   DataTableColumn,
@@ -39,7 +39,8 @@ type DataTableRowProps<T> = {
   onCellClick: DataTableCellClickHandler<T> | undefined;
   onCellDoubleClick: DataTableCellClickHandler<T> | undefined;
   onCellContextMenu: DataTableCellClickHandler<T> | undefined;
-  expansion: ReturnType<typeof useRowExpansion<T>>;
+  expansion: RowExpansionInfo<T>;
+  expanded: boolean;
   customAttributes?: (record: T, index: number) => Record<string, unknown>;
   color:
     | ((record: T, index: number) => MantineColor | undefined | { light: MantineColor; dark: MantineColor })
@@ -79,6 +80,7 @@ function DataTableRowInner<T>({
   onCellDoubleClick,
   onCellContextMenu,
   expansion,
+  expanded,
   customAttributes,
   color,
   backgroundColor,
@@ -171,7 +173,7 @@ function DataTableRowInner<T>({
   const expandedElement = expansion && (
     <DataTableRowExpansion
       colSpan={columns.filter(({ hidden }) => !hidden).length + (selectionVisible ? 1 : 0)}
-      open={expansion.isRowExpanded(record)}
+      open={expanded}
       content={expansion.content({ record, index })}
       collapseProps={expansion.collapseProps}
       virtualizedOdd={virtualizedOdd}
@@ -187,6 +189,7 @@ function DataTableRowInner<T>({
     onDoubleClick,
     onContextMenu,
     expansion,
+    expanded,
     customAttributes,
     color,
     backgroundColor,
@@ -194,9 +197,7 @@ function DataTableRowInner<T>({
     style,
   });
 
-  // The virtualizer measures rendered rows through the ref and locates them by `data-index`;
-  // `data-odd` drives index-based striping, since `:nth-of-type` parity breaks when only a
-  // window of rows is present in the DOM.
+  // `:nth-of-type` striping breaks when only a window of rows is in the DOM, hence `data-odd`.
   const rowProps = virtualizedMeasureRef
     ? {
         ...baseRowProps,
@@ -224,8 +225,7 @@ function DataTableRowInner<T>({
   );
 }
 
-// Virtualized tables re-render on every scroll frame; rows whose props are unchanged must not
-// even be invoked. `memo` loses the generic, so restore the inner signature.
+// `memo` loses the generic, so restore the inner signature.
 export const DataTableRow = memo(DataTableRowInner) as typeof DataTableRowInner;
 
 type GetRowPropsArgs<T> = Readonly<
@@ -238,6 +238,7 @@ type GetRowPropsArgs<T> = Readonly<
     | 'onDoubleClick'
     | 'onContextMenu'
     | 'expansion'
+    | 'expanded'
     | 'customAttributes'
     | 'color'
     | 'backgroundColor'
@@ -254,6 +255,7 @@ export function getRowProps<T>({
   onDoubleClick,
   onContextMenu,
   expansion,
+  expanded,
   customAttributes,
   color,
   backgroundColor,
@@ -275,9 +277,9 @@ export function getRowProps<T>({
 
     onClick: (e: React.MouseEvent<HTMLTableRowElement, MouseEvent>) => {
       if (expansion) {
-        const { isExpandable, isRowExpanded, expandOnClick, expandRow, collapseRow } = expansion;
+        const { isExpandable, expandOnClick, expandRow, collapseRow } = expansion;
         if (isExpandable({ record, index }) && expandOnClick) {
-          if (isRowExpanded(record)) {
+          if (expanded) {
             collapseRow(record);
           } else {
             expandRow(record);

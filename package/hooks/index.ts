@@ -15,3 +15,4 @@ export * from './useOptionalCallbackRef';
 export * from './useRowExpansion';
 export * from './useRowExpansionStatus';
 export * from './useRowVirtualization';
+export * from './useStableCallback';

@@ -1,5 +1,6 @@
 import { rem } from '@mantine/core';
-import { useCallback, useEffect, useRef } from 'react';
+import { useMergedRef } from '@mantine/hooks';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import type { DataTableScrollProps } from '../types/DataTableScrollProps';
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
 import { useStableValue } from './useStableValue';
@@ -55,6 +56,12 @@ function observe(elem: HTMLElement | null, onChange: (rect: Rect) => unknown, on
   }
 }
 
+function useTrackedElement<E extends HTMLElement>(objectRef: RefObject<E | null>) {
+  const [element, setElement] = useState<E | null>(null);
+  const ref = useMergedRef(objectRef, setElement);
+  return [element, ref] as const;
+}
+
 export function useDataTableInjectCssVariables({
   scrollCallbacks,
   withRowBorders,
@@ -68,49 +75,52 @@ export function useDataTableInjectCssVariables({
     selectionColumnHeader: useRef<HTMLTableCellElement>(null),
   };
   const { root, table, scrollViewport, header, footer, selectionColumnHeader } = refs;
+  const [scrollViewportElement, scrollViewportRef] = useTrackedElement(scrollViewport);
+  const [headerElement, headerRef] = useTrackedElement(header);
+  const [footerElement, footerRef] = useTrackedElement(footer);
+  const [selectionColumnHeaderElement, selectionColumnHeaderRef] = useTrackedElement(selectionColumnHeader);
 
   const stableDependencies = useStableValue({ withRowBorders });
   const stableScrollCallbacks = useStableValue(scrollCallbacks);
   const processScrollingRef = useRef<() => void>(() => void 0);
   const processLastRowBottomBorderRef = useRef<() => void>(() => void 0);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: stable refs only
-  const onScroll = useCallback<OnScroll>((ev) => {
+  const onScroll: OnScroll = (ev) => {
     stableScrollCallbacks.current.onScroll?.(ev);
     processScrollingRef.current();
-  }, []);
+  };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
   useEffect(() => {
     return observe(
-      header.current,
+      headerElement,
       (rect) => {
         setCssVar(root.current, VAR_HEADER_HEIGHT, `${rect.height}px`);
       },
       () => setCssVar(root.current, VAR_HEADER_HEIGHT, '0')
     );
-  }, [header.current]);
+  }, [headerElement]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
   useEffect(() => {
     return observe(
-      footer.current,
+      footerElement,
       (rect) => {
         setCssVar(root.current, VAR_FOOTER_HEIGHT, `${rect.height}px`);
       },
       () => setCssVar(root.current, VAR_FOOTER_HEIGHT, '0')
     );
-  }, [footer.current]);
+  }, [footerElement]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
   useEffect(() => {
     return observe(
-      selectionColumnHeader.current,
+      selectionColumnHeaderElement,
       (rect) => {
         setCssVar(root.current, VAR_SELECTION_COLUMN_WIDTH, `${rect.width}px`);
       },
       () => setCssVar(root.current, VAR_SELECTION_COLUMN_WIDTH, '0')
     );
-  }, [selectionColumnHeader.current]);
+  }, [selectionColumnHeaderElement]);
 
   useIsomorphicLayoutEffect(() => {
     if (typeof window === 'undefined') {
@@ -227,6 +237,13 @@ export function useDataTableInjectCssVariables({
 
   return {
     refs,
+    trackedRefs: {
+      scrollViewport: scrollViewportRef,
+      header: headerRef,
+      footer: footerRef,
+      selectionColumnHeader: selectionColumnHeaderRef,
+    },
+    trackedElements: { scrollViewport: scrollViewportElement, header: headerElement, footer: footerElement },
     onScroll,
   };
 }

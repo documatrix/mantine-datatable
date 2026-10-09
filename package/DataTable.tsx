@@ -1,5 +1,5 @@
 import { Box, type MantineSize, Table } from '@mantine/core';
-import { useCallbackRef, useMergedRef } from '@mantine/hooks';
+import { useMergedRef } from '@mantine/hooks';
 import clsx from 'clsx';
 import type { RefObject } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
@@ -22,6 +22,7 @@ import {
   useOptionalCallbackRef,
   useRowExpansion,
   useRowVirtualization,
+  useStableCallback,
 } from './hooks';
 import type { DataTableProps } from './types';
 import { TEXT_SELECTION_DISABLED } from './utilityClasses';
@@ -166,9 +167,15 @@ export function DataTable<T>({
       table: tableElementRef,
       scrollViewport: scrollViewportElementRef,
       header: headerElementRef,
-      footer: footerElementRef,
       selectionColumnHeader: selectionColumnHeaderElementRef,
     },
+    trackedRefs: {
+      scrollViewport: trackedScrollViewportRef,
+      header: trackedHeaderRef,
+      footer: trackedFooterRef,
+      selectionColumnHeader: trackedSelectionColumnHeaderRef,
+    },
+    trackedElements: { scrollViewport: scrollViewportElement, header: headerElement, footer: footerElement },
     onScroll: handleScrollPositionChange,
   } = useDataTableInjectCssVariables({
     scrollCallbacks: {
@@ -194,10 +201,10 @@ export function DataTable<T>({
   const hasFooter = effectiveColumns.some(({ footer }) => footer);
 
   const mergedTableRef = useMergedRef(tableElementRef, tableRef);
-  const mergedViewportRef = useMergedRef(scrollViewportElementRef, scrollViewportRef);
+  const mergedViewportRef = useMergedRef(trackedScrollViewportRef, scrollViewportRef);
   const internalBodyRef = useRef<HTMLTableSectionElement>(null);
   const mergedBodyRef = useMergedRef(internalBodyRef, bodyRef);
-  const rowExpansionInfo = useRowExpansion<T>({ rowExpansion, records, idAccessor });
+  const { expansion: rowExpansionInfo, isRecordIdExpanded } = useRowExpansion<T>({ rowExpansion, records, idAccessor });
 
   const { pinnedMap, hasLeftPinned, hasRightPinned } = useDataTablePinnedColumns({
     columns: effectiveColumns,
@@ -234,9 +241,7 @@ export function DataTable<T>({
 
   const recordsLength = records?.length;
 
-  // Memoized, because the virtualizer uses `getItemKey`'s identity as a cache key for the full
-  // `count`-sized measurement array; an inline arrow would rebuild it on every render, i.e. on
-  // every scroll frame.
+  // The virtualizer rebuilds its whole measurement cache whenever `getItemKey`'s identity changes.
   const getVirtualItemKey = useMemo(
     () => (records ? (index: number) => getRecordId(records[index], idAccessor) as string | number : undefined),
     [records, idAccessor]
@@ -245,11 +250,9 @@ export function DataTable<T>({
   const rowVirtualization = useRowVirtualization({
     enabled: !!virtualized,
     count: recordsLength ?? 0,
-    scrollViewportRef: scrollViewportElementRef as RefObject<HTMLElement | null>,
-    headerRef: headerElementRef as RefObject<HTMLElement | null>,
-    footerRef: footerElementRef as RefObject<HTMLElement | null>,
-    hasHeader: !noHeader,
-    hasFooter,
+    scrollElement: scrollViewportElement,
+    headerElement,
+    footerElement,
     rowHeight: virtualizedRowHeight,
     overscan: virtualizedOverscan,
     getItemKey: getVirtualItemKey,
@@ -273,9 +276,6 @@ export function DataTable<T>({
     return () => cancelAnimationFrame(raf);
   }, [fetching, records, scrollViewportElementRef]);
 
-  // The virtualizer re-renders the component on every scroll frame, so anything derived from
-  // records/selectedRecords must be memoized and selection lookups must be O(1); otherwise
-  // large datasets with selection enabled degrade to quadratic work per frame.
   const recordIds = useMemo(() => records?.map((record) => getRecordId(record, idAccessor)), [records, idAccessor]);
   const selectionColumnVisible = !!selectedRecords;
   const selectedRecordIdsSet = useMemo(
@@ -319,10 +319,7 @@ export function DataTable<T>({
 
   const lastSelectionChangeIndexRef = useLastSelectionChangeIndex(recordIds);
 
-  // Rows receive this one function for the lifetime of the table and bind their own record/index;
-  // it reads the latest selection through the callback ref, so a selection change re-renders only
-  // the rows whose `selectionChecked` actually flipped.
-  const handleRecordSelectionChange = useCallbackRef((record: T, index: number, event: React.MouseEvent) => {
+  const handleRecordSelectionChange = useStableCallback((record: T, index: number, event: React.MouseEvent) => {
     if (!selectedRecords || !onSelectedRecordsChange) return;
 
     const recordId = getRecordId(record, idAccessor);
@@ -352,8 +349,6 @@ export function DataTable<T>({
   const rowSelectionChangeHandler =
     selectedRecords && onSelectedRecordsChange ? handleRecordSelectionChange : undefined;
 
-  // Consumers commonly pass these inline; a new identity per parent render would otherwise
-  // re-render every row.
   const stableOnRowClick = useOptionalCallbackRef(onRowClick);
   const stableOnRowDoubleClick = useOptionalCallbackRef(onRowDoubleClick);
   const stableOnRowContextMenu = useOptionalCallbackRef(onRowContextMenu);
@@ -393,6 +388,7 @@ export function DataTable<T>({
         onContextMenu={stableOnRowContextMenu}
         onCellContextMenu={stableOnCellContextMenu}
         expansion={rowExpansionInfo}
+        expanded={isRecordIdExpanded(recordId)}
         color={rowColor}
         backgroundColor={rowBackgroundColor}
         className={rowClassName}
@@ -490,8 +486,8 @@ export function DataTable<T>({
               {noHeader ? null : (
                 <DataTableColumnsProvider {...dragToggle} pinnedMap={pinnedMap}>
                   <DataTableHeader<T>
-                    ref={headerElementRef}
-                    selectionColumnHeaderRef={selectionColumnHeaderElementRef}
+                    ref={trackedHeaderRef}
+                    selectionColumnHeaderRef={trackedSelectionColumnHeaderRef}
                     className={classNames?.header}
                     style={styles?.header}
                     columns={effectiveColumns}
@@ -536,7 +532,7 @@ export function DataTable<T>({
 
               {hasFooter && (
                 <DataTableFooter<T>
-                  ref={footerElementRef}
+                  ref={trackedFooterRef}
                   className={classNames?.footer}
                   style={styles?.footer}
                   columns={effectiveColumns}

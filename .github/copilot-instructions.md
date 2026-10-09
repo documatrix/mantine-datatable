@@ -15,7 +15,7 @@ This is a dual-purpose repository containing both the **Mantine DataTable** comp
 ```bash
 # Core development commands (use bun)
 bun run dev              # Start Next.js dev server for docs/examples
-bun run build:package    # Build package only (tsup + postcss)
+bun run build:package    # Build package only (tsdown + postcss)
 bun run build:docs       # Build documentation site
 bun run build            # Build both package and docs
 bun run lint             # Biome + TypeScript checks
@@ -101,11 +101,9 @@ Examples use consistent data shapes:
 
 ## Build System
 
-### Package Build (tsup)
+### Package Build (tsdown)
 
-- **ESM**: `tsup.esm.ts` - Modern module format
-- **CJS**: `tsup.cjs.ts` - CommonJS compatibility
-- **Types**: `tsup.dts.ts` - TypeScript declarations
+- **JS + Types**: `tsdown.config.mts` - ESM, CJS and `.d.ts`/`.d.mts` in one config, React Compiler via `@rolldown/plugin-babel`
 - **CSS**: PostCSS processes styles to `dist/`
 
 ### Documentation Deployment

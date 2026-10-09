@@ -5,11 +5,9 @@ import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
 type UseRowVirtualizationOptions = {
   enabled: boolean;
   count: number;
-  scrollViewportRef: React.RefObject<HTMLElement | null>;
-  headerRef: React.RefObject<HTMLElement | null>;
-  footerRef: React.RefObject<HTMLElement | null>;
-  hasHeader: boolean;
-  hasFooter: boolean;
+  scrollElement: HTMLElement | null;
+  headerElement: HTMLElement | null;
+  footerElement: HTMLElement | null;
   rowHeight: number;
   overscan: number;
   getItemKey: ((index: number) => string | number) | undefined;
@@ -18,28 +16,14 @@ type UseRowVirtualizationOptions = {
 
 export type RowVirtualizationInfo = {
   virtualItems: VirtualItem[];
-  /**
-   * Height of the spacer row rendered before the first virtual row.
-   */
   paddingTop: number;
-  /**
-   * Height of the spacer row rendered after the last virtual row.
-   */
   paddingBottom: number;
-  /**
-   * Ref callback measuring rendered rows; rows must also carry a `data-index` attribute.
-   */
+  // Rows must also carry a `data-index` attribute.
   measureRef: (element: HTMLTableRowElement | null) => void;
-  /**
-   * Ref callback for row expansion rows; remeasures the row they belong to when they change height.
-   */
   expansionRowRef: (element: HTMLTableRowElement | null) => (() => void) | undefined;
 };
 
-/**
- * Measures a row together with the extra rows it may drag along (such as row expansion rows),
- * i.e. all the sibling `tr` elements that follow it up to the next data row or spacer row.
- */
+// A row's size includes the trailing `tr`s it drags along (row expansion rows).
 function measureRowWithTrailingSiblings(element: HTMLTableRowElement) {
   let height = element.getBoundingClientRect().height;
   let sibling = element.nextElementSibling;
@@ -58,31 +42,21 @@ function measureRowWithTrailingSiblings(element: HTMLTableRowElement) {
 export function useRowVirtualization({
   enabled,
   count,
-  scrollViewportRef,
-  headerRef,
-  footerRef,
-  hasHeader,
-  hasFooter,
+  scrollElement,
+  headerElement,
+  footerElement,
   rowHeight,
   overscan,
   getItemKey,
   virtualizerRef,
 }: UseRowVirtualizationOptions): RowVirtualizationInfo | null {
-  // Track the scroll element in state so that a re-render is guaranteed once it's available:
-  // the virtualizer only attaches its scroll/resize observers when getScrollElement() returns
-  // a non-null element during render.
-  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
-  useIsomorphicLayoutEffect(() => {
-    setScrollElement(scrollViewportRef.current);
-  }, [scrollViewportRef]);
-
   // The sticky header and footer cover the bottom of the scrolled-to range, as tbody starts below the header.
   const [stickyHeight, setStickyHeight] = useState(0);
 
   useIsomorphicLayoutEffect(() => {
     if (!enabled || typeof ResizeObserver === 'undefined') return;
 
-    const elements = [headerRef.current, footerRef.current].filter((element) => element !== null);
+    const elements = [headerElement, footerElement].filter((element) => element !== null);
     const update = () =>
       setStickyHeight(elements.reduce((sum, element) => sum + element.getBoundingClientRect().height, 0));
 
@@ -93,7 +67,7 @@ export function useRowVirtualization({
     for (const element of elements) observer.observe(element);
 
     return () => observer.disconnect();
-  }, [enabled, headerRef, footerRef, hasHeader, hasFooter]);
+  }, [enabled, headerElement, footerElement]);
 
   const virtualizer = useVirtualizer<HTMLElement, HTMLTableRowElement>({
     count,
@@ -102,8 +76,6 @@ export function useRowVirtualization({
     estimateSize: () => rowHeight,
     overscan,
     scrollPaddingEnd: stickyHeight,
-    // Key the measurement cache by record id, so measured heights (e.g. of expanded rows)
-    // follow their records when the data is re-sorted or mutated.
     getItemKey,
     measureElement: measureRowWithTrailingSiblings,
     // Defer ResizeObserver-driven remeasurements to an animation frame; otherwise the
@@ -113,9 +85,11 @@ export function useRowVirtualization({
   });
 
   useEffect(() => {
-    if (virtualizerRef) {
-      virtualizerRef.current = enabled ? virtualizer : null;
-    }
+    if (!virtualizerRef || !enabled) return;
+    virtualizerRef.current = virtualizer;
+    return () => {
+      virtualizerRef.current = null;
+    };
   }, [enabled, virtualizer, virtualizerRef]);
 
   // Measuring can make the virtualizer flushSync, which React forbids (and warns about) inside ref callbacks.
@@ -147,9 +121,7 @@ export function useRowVirtualization({
     [virtualizer]
   );
 
-  // `getVirtualItems()` is memoized by the virtualizer, so this object only changes identity when
-  // the visible range or a measurement does. React Compiler skips this hook (useVirtualizer is
-  // flagged as incompatible), hence the explicit memo.
+  // React Compiler skips this hook (useVirtualizer is flagged as incompatible), hence the explicit memo.
   const virtualItems = enabled ? virtualizer.getVirtualItems() : null;
   const totalSize = enabled ? virtualizer.getTotalSize() : 0;
 
