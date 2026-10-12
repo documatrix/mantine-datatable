@@ -1,9 +1,9 @@
 import { rem } from '@mantine/core';
-import { useMergedRef } from '@mantine/hooks';
-import { type RefObject, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { DataTableScrollProps } from '../types/DataTableScrollProps';
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
 import { useStableValue } from './useStableValue';
+import { useTrackedElement } from './useTrackedElement';
 
 const VAR_HEADER_HEIGHT = '--mantine-datatable-header-height';
 const VAR_FOOTER_HEIGHT = '--mantine-datatable-footer-height';
@@ -54,12 +54,6 @@ function observe(elem: HTMLElement | null, onChange: (rect: Rect) => unknown, on
       onCancel();
     };
   }
-}
-
-function useTrackedElement<E extends HTMLElement>(objectRef: RefObject<E | null>) {
-  const [element, setElement] = useState<E | null>(null);
-  const ref = useMergedRef(objectRef, setElement);
-  return [element, ref] as const;
 }
 
 export function useDataTableInjectCssVariables({

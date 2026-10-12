@@ -240,13 +240,10 @@ export function DataTable<T>({
 
   const recordsLength = records?.length;
 
-  // The virtualizer recomputes all item offsets whenever `getItemKey`'s identity changes, so an
-  // inline function `idAccessor` must not be part of it.
-  const stableIdAccessorFn = useStableCallback(typeof idAccessor === 'function' ? idAccessor : undefined);
-  const virtualKeyAccessor = typeof idAccessor === 'function' ? stableIdAccessorFn : idAccessor;
+  // The virtualizer recomputes all item offsets whenever `getItemKey`'s identity changes.
   const getVirtualItemKey = useMemo(
-    () => (records ? (index: number) => getRecordId(records[index], virtualKeyAccessor) as string | number : undefined),
-    [records, virtualKeyAccessor]
+    () => (records ? (index: number) => getRecordId(records[index], idAccessor) as string | number : undefined),
+    [records, idAccessor]
   );
 
   const rowVirtualization = useRowVirtualization({

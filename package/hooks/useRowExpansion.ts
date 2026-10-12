@@ -10,8 +10,7 @@ function getInitiallyExpandedRecordIds<T>(
 ): unknown[] {
   if (!rowExpansion || !records) return [];
   const { trigger, allowMultiple, initiallyExpanded } = rowExpansion;
-  if (trigger === 'always') return records.map((r) => getRecordId(r, idAccessor));
-  if (!initiallyExpanded) return [];
+  if (trigger === 'always' || !initiallyExpanded) return [];
   const ids = records
     .filter((record, index) => initiallyExpanded({ record, index }))
     .map((r) => getRecordId(r, idAccessor));
