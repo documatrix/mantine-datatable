@@ -5,6 +5,7 @@ export * from './DataTableColumnTextAlign';
 export * from './DataTableDefaultColumnProps';
 export * from './DataTableDraggableRowProps';
 export * from './DataTableEmptyStateProps';
+export * from './DataTableIdAccessor';
 export * from './DataTableOuterBorderProps';
 export * from './DataTablePaginationProps';
 export * from './DataTablePaginationRenderContext';

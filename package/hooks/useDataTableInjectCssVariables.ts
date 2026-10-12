@@ -89,7 +89,7 @@ export function useDataTableInjectCssVariables({
     processScrollingRef.current();
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `root` is a ref destructured from an object, which biome cannot track
   useEffect(() => {
     return observe(
       headerElement,
@@ -100,7 +100,7 @@ export function useDataTableInjectCssVariables({
     );
   }, [headerElement]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `root` is a ref destructured from an object, which biome cannot track
   useEffect(() => {
     return observe(
       footerElement,
@@ -111,7 +111,7 @@ export function useDataTableInjectCssVariables({
     );
   }, [footerElement]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `root` is a ref destructured from an object, which biome cannot track
   useEffect(() => {
     return observe(
       selectionColumnHeaderElement,

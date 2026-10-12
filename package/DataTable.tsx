@@ -276,23 +276,15 @@ export function DataTable<T>({
     return () => cancelAnimationFrame(raf);
   }, [fetching, records, scrollViewportElementRef]);
 
-  const recordIds = useMemo(() => records?.map((record) => getRecordId(record, idAccessor)), [records, idAccessor]);
   const selectionColumnVisible = !!selectedRecords;
-  const selectedRecordIdsSet = useMemo(
-    () => (selectedRecords ? new Set(selectedRecords.map((record) => getRecordId(record, idAccessor))) : undefined),
-    [selectedRecords, idAccessor]
-  );
+  const selectedRecordIdsSet = selectedRecords
+    ? new Set(selectedRecords.map((record) => getRecordId(record, idAccessor)))
+    : undefined;
   const hasRecordsAndSelectedRecords =
-    recordIds !== undefined && selectedRecordIdsSet !== undefined && selectedRecordIdsSet.size > 0;
+    records !== undefined && selectedRecordIdsSet !== undefined && selectedRecordIdsSet.size > 0;
 
-  const selectableRecords = useMemo(
-    () => (isRecordSelectable ? records?.filter(isRecordSelectable) : records),
-    [records, isRecordSelectable]
-  );
-  const selectableRecordIds = useMemo(
-    () => selectableRecords?.map((record) => getRecordId(record, idAccessor)),
-    [selectableRecords, idAccessor]
-  );
+  const selectableRecords = isRecordSelectable ? records?.filter(isRecordSelectable) : records;
+  const selectableRecordIds = selectableRecords?.map((record) => getRecordId(record, idAccessor));
 
   const allSelectableRecordsSelected =
     hasRecordsAndSelectedRecords && selectableRecordIds!.every((id) => selectedRecordIdsSet.has(id));
@@ -317,7 +309,10 @@ export function DataTable<T>({
     selectedRecords,
   ]);
 
-  const lastSelectionChangeIndexRef = useLastSelectionChangeIndex(recordIds);
+  const lastSelectionChangeIndexRef = useLastSelectionChangeIndex(
+    onSelectedRecordsChange ? records : undefined,
+    idAccessor
+  );
 
   const handleRecordSelectionChange = useStableCallback((record: T, index: number, event: React.MouseEvent) => {
     if (!selectedRecords || !onSelectedRecordsChange) return;
@@ -360,7 +355,7 @@ export function DataTable<T>({
 
   const marginProperties = { m, my, mx, mt, mb, ml, mr };
 
-  const spacerRowColSpan = effectiveColumns.filter(({ hidden }) => !hidden).length + (selectionColumnVisible ? 1 : 0);
+  const fullRowColSpan = effectiveColumns.filter(({ hidden }) => !hidden).length + (selectionColumnVisible ? 1 : 0);
 
   const renderRow = (record: T, index: number) => {
     const recordId = getRecordId(record, idAccessor);
@@ -388,6 +383,7 @@ export function DataTable<T>({
         onContextMenu={stableOnRowContextMenu}
         onCellContextMenu={stableOnCellContextMenu}
         expansion={rowExpansionInfo}
+        expansionColSpan={fullRowColSpan}
         expanded={isRecordIdExpanded(recordId)}
         color={rowColor}
         backgroundColor={rowBackgroundColor}
@@ -515,11 +511,11 @@ export function DataTable<T>({
                   rowVirtualization ? (
                     <>
                       {rowVirtualization.paddingTop > 0 && (
-                        <DataTableSpacerRow height={rowVirtualization.paddingTop} colSpan={spacerRowColSpan} />
+                        <DataTableSpacerRow height={rowVirtualization.paddingTop} colSpan={fullRowColSpan} />
                       )}
                       {rowVirtualization.virtualItems.map(({ index }) => renderRow(records![index], index))}
                       {rowVirtualization.paddingBottom > 0 && (
-                        <DataTableSpacerRow height={rowVirtualization.paddingBottom} colSpan={spacerRowColSpan} />
+                        <DataTableSpacerRow height={rowVirtualization.paddingBottom} colSpan={fullRowColSpan} />
                       )}
                     </>
                   ) : (

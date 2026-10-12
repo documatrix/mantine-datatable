@@ -1,5 +1,5 @@
 import type { DropResult } from '@hello-pangea/dnd';
-import type { DataTableColumn, DataTableColumnGroup } from './types';
+import type { DataTableColumn, DataTableColumnGroup, DataTableIdAccessor } from './types';
 
 /**
  * Utility function that returns a humanized version of a string, e.g. "camelCase" -> "Camel Case"
@@ -75,10 +75,7 @@ export function getValueAtPath<T>(obj: T, path: keyof T | (string & NonNullable<
 /**
  * Utility function that returns the record id using idAccessor
  */
-export function getRecordId<T>(
-  record: T,
-  idAccessor: keyof T | (string & NonNullable<unknown>) | ((record: T) => React.Key)
-) {
+export function getRecordId<T>(record: T, idAccessor: DataTableIdAccessor<T>) {
   return typeof idAccessor === 'string'
     ? getValueAtPath(record, idAccessor)
     : (idAccessor as (record: T) => React.Key)(record);

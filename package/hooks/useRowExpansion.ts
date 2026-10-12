@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react';
-import type { DataTableRowExpansionProps } from '../types/DataTableRowExpansionProps';
+import type { DataTableIdAccessor, DataTableRowExpansionProps } from '../types';
 import { getRecordId } from '../utils';
 import { useStableCallback } from './useStableCallback';
-
-type IdAccessor<T> = (keyof T | (string & NonNullable<unknown>)) | ((record: T) => React.Key);
 
 function getInitiallyExpandedRecordIds<T>(
   rowExpansion: DataTableRowExpansionProps<T> | undefined,
   records: T[] | undefined,
-  idAccessor: IdAccessor<T>
+  idAccessor: DataTableIdAccessor<T>
 ): unknown[] {
   if (!rowExpansion || !records) return [];
   const { trigger, allowMultiple, initiallyExpanded } = rowExpansion;
@@ -27,7 +25,7 @@ export function useRowExpansion<T>({
 }: {
   rowExpansion?: DataTableRowExpansionProps<T>;
   records: T[] | undefined;
-  idAccessor: IdAccessor<T>;
+  idAccessor: DataTableIdAccessor<T>;
 }) {
   const [uncontrolledExpandedRecordIds, setUncontrolledExpandedRecordIds] = useState<unknown[]>(() =>
     getInitiallyExpandedRecordIds(rowExpansion, records, idAccessor)

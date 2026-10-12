@@ -13,6 +13,7 @@ module.exports = async () => {
    */
   const config = {
     output: 'export',
+    reactCompiler: true,
     trailingSlash: true,
     images: { unoptimized: true },
     typedRoutes: true,

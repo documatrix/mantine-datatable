@@ -4,7 +4,6 @@ import { DataTable } from '__PACKAGE__';
 import dayjs from 'dayjs';
 import { type Employee, employees } from '~/data';
 
-// Repeat the sample employees to obtain a large dataset
 const records: Employee[] = Array.from({ length: 5000 }, (_, index) => {
   const employee = employees[index % employees.length];
   return { ...employee, id: `${employee.id}-${index}` };

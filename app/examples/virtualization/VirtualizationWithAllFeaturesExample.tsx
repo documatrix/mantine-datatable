@@ -1,21 +1,30 @@
 'use client';
 
-import { DataTable, type DataTableSortStatus } from '__PACKAGE__';
+import { DataTable, type DataTableSortStatus, type DataTableVirtualizer } from '__PACKAGE__';
 import { ActionIcon, Box, Button, Group, MultiSelect, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconSearch, IconX } from '@tabler/icons-react';
-import type { Virtualizer } from '@tanstack/react-virtual';
 import sortBy from 'lodash/sortBy';
 import { useMemo, useRef, useState } from 'react';
 import { type Employee, employees } from '~/data';
 
-// Repeat the sample employees to obtain a large dataset
 const allRecords: Employee[] = Array.from({ length: 5000 }, (_, index) => {
   const employee = employees[index % employees.length];
   return { ...employee, id: `${employee.id}-${index}` };
 });
 
 const departments = [...new Set(employees.map((employee) => employee.department.name))];
+
+const rowExpansion = {
+  content: ({ record }: { record: Employee }) => (
+    <Box p="xs">
+      <Text size="sm">
+        {record.firstName} {record.lastName} works at {record.department.company.name}, {record.department.name}{' '}
+        department, and can be reached at {record.email}.
+      </Text>
+    </Box>
+  ),
+};
 
 export function VirtualizationWithAllFeaturesExample() {
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Employee>>({
@@ -26,7 +35,7 @@ export function VirtualizationWithAllFeaturesExample() {
   const [query, setQuery] = useState('');
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [debouncedQuery] = useDebouncedValue(query, 200);
-  const virtualizerRef = useRef<Virtualizer<HTMLElement, HTMLTableRowElement> | null>(null);
+  const virtualizerRef = useRef<DataTableVirtualizer | null>(null);
 
   const records = useMemo(() => {
     const normalizedQuery = debouncedQuery.trim().toLowerCase();
@@ -113,16 +122,7 @@ export function VirtualizationWithAllFeaturesExample() {
         selectedRecords={selectedRecords}
         onSelectedRecordsChange={setSelectedRecords}
         virtualizerRef={virtualizerRef}
-        rowExpansion={{
-          content: ({ record }) => (
-            <Box p="xs">
-              <Text size="sm">
-                {record.firstName} {record.lastName} works at {record.department.company.name}, {record.department.name}{' '}
-                department, and can be reached at {record.email}.
-              </Text>
-            </Box>
-          ),
-        }}
+        rowExpansion={rowExpansion}
       />
       <Group justify="space-between" mt="sm">
         <Text size="sm">

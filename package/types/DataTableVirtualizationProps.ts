@@ -1,5 +1,7 @@
 import type { Virtualizer } from '@tanstack/react-virtual';
 
+export type DataTableVirtualizer = Virtualizer<HTMLElement, HTMLTableRowElement>;
+
 export type DataTableVirtualizationProps = {
   /**
    * If true, table rows will be virtualized with `@tanstack/react-virtual`: only the rows
@@ -30,5 +32,5 @@ export type DataTableVirtualizationProps = {
    * virtualization is enabled.
    * Useful for imperative interactions, such as `scrollToIndex()`.
    */
-  virtualizerRef?: React.RefObject<Virtualizer<HTMLElement, HTMLTableRowElement> | null>;
+  virtualizerRef?: React.RefObject<DataTableVirtualizer | null>;
 };

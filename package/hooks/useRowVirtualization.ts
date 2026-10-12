@@ -107,15 +107,20 @@ export function useRowVirtualization({
       while (sibling && !sibling.classList.contains('mantine-datatable-row')) sibling = sibling.previousElementSibling;
       if (!(sibling instanceof HTMLTableRowElement)) return;
       const row = sibling;
+      // Deferred like the virtualizer's own observer: `resizeItem` may flushSync.
+      let frame = 0;
       const remeasure = () => {
-        if (!row.isConnected) return;
-        virtualizer.resizeItem(virtualizer.indexFromElement(row), measureRowWithTrailingSiblings(row));
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => {
+          if (!row.isConnected) return;
+          virtualizer.resizeItem(virtualizer.indexFromElement(row), measureRowWithTrailingSiblings(row));
+        });
       };
       const observer = new ResizeObserver(remeasure);
       observer.observe(element);
       return () => {
         observer.disconnect();
-        requestAnimationFrame(remeasure);
+        remeasure();
       };
     },
     [virtualizer]

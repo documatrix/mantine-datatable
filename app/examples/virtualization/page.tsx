@@ -52,11 +52,12 @@ export default async function VirtualizationExamplePage() {
       <Txt>Here is the code:</Txt>
       <CodeBlock code={code['VirtualizationWithAllFeaturesExample.tsx']} />
       <Txt info>
-        Rows only re-render when their props change. Properties such as <Code>rowExpansion.content</Code>,{' '}
-        <Code>rowExpansion.expandable</Code>, <Code>rowExpansion.collapseProps</Code> or <Code>rowStyle</Code> are
-        passed to every row, so defining them inline re-renders all visible rows whenever the parent component
-        re-renders. For the smoothest scrolling, hoist them out of the component or wrap them in{' '}
-        <Code>useCallback</Code> / <Code>useMemo</Code>.
+        Rows only re-render when their props change. Any function or object property that reaches every row (
+        <Code>rowExpansion</Code>, <Code>rowStyle</Code>, <Code>rowClassName</Code>, <Code>rowFactory</Code>,{' '}
+        <Code>isRecordSelectable</Code>, <Code>customRowAttributes</Code>, <Code>defaultColumnRender</Code>, etc.)
+        re-renders all visible rows whenever the parent component re-renders if it is defined inline. For the smoothest
+        scrolling, hoist such properties out of the component or wrap them in <Code>useCallback</Code> /{' '}
+        <Code>useMemo</Code>.
       </Txt>
       <Txt>Head over to the next example to discover more features.</Txt>
       <PageNavigation of={PATH} />

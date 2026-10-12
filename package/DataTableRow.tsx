@@ -40,6 +40,7 @@ type DataTableRowProps<T> = {
   onCellDoubleClick: DataTableCellClickHandler<T> | undefined;
   onCellContextMenu: DataTableCellClickHandler<T> | undefined;
   expansion: RowExpansionInfo<T>;
+  expansionColSpan: number;
   expanded: boolean;
   customAttributes?: (record: T, index: number) => Record<string, unknown>;
   color:
@@ -80,6 +81,7 @@ function DataTableRowInner<T>({
   onCellDoubleClick,
   onCellContextMenu,
   expansion,
+  expansionColSpan,
   expanded,
   customAttributes,
   color,
@@ -172,7 +174,7 @@ function DataTableRowInner<T>({
 
   const expandedElement = expansion && (
     <DataTableRowExpansion
-      colSpan={columns.filter(({ hidden }) => !hidden).length + (selectionVisible ? 1 : 0)}
+      colSpan={expansionColSpan}
       open={expanded}
       content={expansion.content({ record, index })}
       collapseProps={expansion.collapseProps}
@@ -197,7 +199,6 @@ function DataTableRowInner<T>({
     style,
   });
 
-  // `:nth-of-type` striping breaks when only a window of rows is in the DOM, hence `data-odd`.
   const rowProps = virtualizedMeasureRef
     ? {
         ...baseRowProps,
