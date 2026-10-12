@@ -18,7 +18,6 @@ import {
   useDataTableColumns,
   useDataTableInjectCssVariables,
   useDataTablePinnedColumns,
-  useLastSelectionChangeIndex,
   useOptionalCallbackRef,
   useRowExpansion,
   useRowVirtualization,
@@ -241,10 +240,13 @@ export function DataTable<T>({
 
   const recordsLength = records?.length;
 
-  // The virtualizer rebuilds its whole measurement cache whenever `getItemKey`'s identity changes.
+  // The virtualizer recomputes all item offsets whenever `getItemKey`'s identity changes, so an
+  // inline function `idAccessor` must not be part of it.
+  const stableIdAccessorFn = useStableCallback(typeof idAccessor === 'function' ? idAccessor : undefined);
+  const virtualKeyAccessor = typeof idAccessor === 'function' ? stableIdAccessorFn : idAccessor;
   const getVirtualItemKey = useMemo(
-    () => (records ? (index: number) => getRecordId(records[index], idAccessor) as string | number : undefined),
-    [records, idAccessor]
+    () => (records ? (index: number) => getRecordId(records[index], virtualKeyAccessor) as string | number : undefined),
+    [records, virtualKeyAccessor]
   );
 
   const rowVirtualization = useRowVirtualization({
@@ -309,17 +311,20 @@ export function DataTable<T>({
     selectedRecords,
   ]);
 
-  const lastSelectionChangeIndexRef = useLastSelectionChangeIndex(
-    onSelectedRecordsChange ? records : undefined,
-    idAccessor
-  );
+  // Shift-click range anchor, read only in click handlers; it only counts while the same record is
+  // still at that index.
+  const lastSelectionChangeRef = useRef<{ index: number; id: unknown } | null>(null);
 
   const handleRecordSelectionChange = useStableCallback((record: T, index: number, event: React.MouseEvent) => {
     if (!selectedRecords || !onSelectedRecordsChange) return;
 
     const recordId = getRecordId(record, idAccessor);
     const isSelected = selectedRecordIdsSet?.has(recordId) ?? false;
-    const lastSelectionChangeIndex = lastSelectionChangeIndexRef.current;
+    const anchor = lastSelectionChangeRef.current;
+    const lastSelectionChangeIndex =
+      anchor && anchor.index < records!.length && getRecordId(records![anchor.index], idAccessor) === anchor.id
+        ? anchor.index
+        : null;
 
     if (event.nativeEvent.shiftKey && lastSelectionChangeIndex !== null) {
       const [from, to] =
@@ -339,7 +344,7 @@ export function DataTable<T>({
           : uniqBy([...selectedRecords, record], (rec) => getRecordId(rec, idAccessor))
       );
     }
-    lastSelectionChangeIndexRef.current = index;
+    lastSelectionChangeRef.current = { index, id: recordId };
   });
   const rowSelectionChangeHandler =
     selectedRecords && onSelectedRecordsChange ? handleRecordSelectionChange : undefined;

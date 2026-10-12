@@ -208,8 +208,8 @@ export type DataTableProps<T = Record<string, unknown>> = {
    * Optional style passed to each row.
    * a function that receives the current record, its index, default row props and expanded element as arguments
    * and returns a React node representing the row.
-   * Spread `rowProps` onto the rendered `tr`: its `className` identifies rows for pinned column
-   * measurement and virtualization, and its `ref` measures the row when `virtualized` is enabled;
+   * Spread `rowProps` onto the rendered `tr`: its `className` and `data-*` attributes drive striping,
+   * pinned column measurement and virtualization, and its `ref` measures the row when `virtualized` is enabled;
    * combine the latter with any ref of your own, e.g. with `mergeRefs` from `@mantine/hooks`.
    */
   rowFactory?: (props: {

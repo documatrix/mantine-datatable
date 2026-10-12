@@ -7,7 +7,6 @@ export * from './useDataTableColumnToggle';
 export * from './useDataTableInjectCssVariables';
 export * from './useDataTablePinnedColumns';
 export * from './useIsomorphicLayoutEffect';
-export * from './useLastSelectionChangeIndex';
 export * from './useMediaQueries';
 export * from './useMediaQueriesStringOrFunction';
 export * from './useMediaQueryStringOrFunction';
