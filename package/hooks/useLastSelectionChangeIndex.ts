@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { DataTableIdAccessor } from '../types';
 import { getRecordId } from '../utils';
 
-// Shift-click range anchor. A ref, not state: it is only read inside click handlers and must not
-// re-render the table.
+// Shift-click range anchor, read only in click handlers.
 export function useLastSelectionChangeIndex<T>(records: T[] | undefined, idAccessor: DataTableIdAccessor<T>) {
   const lastSelectionChangeIndexRef = useRef<number | null>(null);
   let recordIdsString = '';

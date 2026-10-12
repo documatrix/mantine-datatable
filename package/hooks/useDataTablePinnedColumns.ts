@@ -157,10 +157,10 @@ export function useDataTablePinnedColumns<T>({
     const observer = new ResizeObserver(recalculate);
     let observedRow: Element | null = null;
     const observeRow = () => {
+      if (observedRow?.isConnected) return;
       const row = isTheadSource
         ? section.querySelector('tr:last-of-type')
         : section.querySelector('tr.mantine-datatable-row');
-      if (row === observedRow) return;
       observedRow = row;
       observer.disconnect();
       row?.querySelectorAll(isTheadSource ? 'th' : 'td').forEach((cell) => {

@@ -397,7 +397,6 @@ export function DataTable<T>({
         rowFactory={rowFactory}
         virtualizedMeasureRef={rowVirtualization?.measureRef}
         virtualizedExpansionRowRef={rowVirtualization?.expansionRowRef}
-        virtualizedOdd={rowVirtualization ? index % 2 === 0 : undefined}
       />
     );
   };

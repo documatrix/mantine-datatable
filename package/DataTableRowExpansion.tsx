@@ -7,7 +7,7 @@ type DataTableRowExpansionProps = {
   colSpan: number;
   content: () => React.ReactNode;
   collapseProps: DataTableRowExpansionCollapseProps | undefined;
-  virtualizedOdd?: boolean;
+  odd: true | undefined;
   rowRef?: React.Ref<HTMLTableRowElement>;
 };
 
@@ -16,22 +16,18 @@ export function DataTableRowExpansion({
   colSpan,
   content,
   collapseProps,
-  virtualizedOdd,
+  odd,
   rowRef,
 }: DataTableRowExpansionProps) {
   const { expanded, visible } = useRowExpansionStatus(open, collapseProps?.transitionDuration);
 
   return visible ? (
-    <>
-      {/* add an empty row to maintain striped rows consistency */}
-      <TableTr />
-      <TableTr ref={rowRef} data-odd={virtualizedOdd || undefined}>
-        <TableTd className="mantine-datatable-row-expansion-cell" colSpan={colSpan}>
-          <Collapse expanded={expanded} {...collapseProps}>
-            <div className="mantine-datatable-row-expansion-cell-content">{content()}</div>
-          </Collapse>
-        </TableTd>
-      </TableTr>
-    </>
+    <TableTr ref={rowRef} data-odd={odd}>
+      <TableTd className="mantine-datatable-row-expansion-cell" colSpan={colSpan}>
+        <Collapse expanded={expanded} {...collapseProps}>
+          <div className="mantine-datatable-row-expansion-cell-content">{content()}</div>
+        </Collapse>
+      </TableTd>
+    </TableTr>
   ) : null;
 }

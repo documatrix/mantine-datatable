@@ -57,7 +57,6 @@ type DataTableRowProps<T> = {
   idAccessor: string;
   virtualizedMeasureRef?: (element: HTMLTableRowElement | null) => void;
   virtualizedExpansionRowRef?: (element: HTMLTableRowElement | null) => (() => void) | undefined;
-  virtualizedOdd?: boolean;
 } & Pick<DataTableProps<T>, 'rowFactory'>;
 
 function DataTableRowInner<T>({
@@ -94,7 +93,6 @@ function DataTableRowInner<T>({
   rowFactory,
   virtualizedMeasureRef,
   virtualizedExpansionRowRef,
-  virtualizedOdd,
 }: Readonly<DataTableRowProps<T>>) {
   const handleSelectionChange: React.MouseEventHandler | undefined = onSelectionChange
     ? (event) => onSelectionChange(record, index, event)
@@ -172,13 +170,15 @@ function DataTableRowInner<T>({
     </>
   );
 
+  const odd = index % 2 === 0 || undefined;
+
   const expandedElement = expansion && (
     <DataTableRowExpansion
       colSpan={expansionColSpan}
       open={expanded}
       content={expansion.content({ record, index })}
       collapseProps={expansion.collapseProps}
-      virtualizedOdd={virtualizedOdd}
+      odd={odd}
       rowRef={virtualizedExpansionRowRef}
     />
   );
@@ -200,13 +200,8 @@ function DataTableRowInner<T>({
   });
 
   const rowProps = virtualizedMeasureRef
-    ? {
-        ...baseRowProps,
-        ref: virtualizedMeasureRef,
-        'data-index': index,
-        'data-odd': virtualizedOdd || undefined,
-      }
-    : baseRowProps;
+    ? { ...baseRowProps, ref: virtualizedMeasureRef, 'data-index': index, 'data-odd': odd }
+    : { ...baseRowProps, 'data-odd': odd };
 
   if (rowFactory) {
     return rowFactory({
