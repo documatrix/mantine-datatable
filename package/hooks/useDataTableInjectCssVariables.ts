@@ -60,15 +60,15 @@ export function useDataTableInjectCssVariables({
   scrollCallbacks,
   withRowBorders,
 }: UseDataTableInjectCssVariablesOpts) {
-  const refs = {
-    root: useRef<HTMLDivElement>(null),
-    table: useRef<HTMLTableElement>(null),
-    scrollViewport: useRef<HTMLElement>(null),
-    header: useRef<HTMLTableSectionElement>(null),
-    footer: useRef<HTMLTableSectionElement>(null),
-    selectionColumnHeader: useRef<HTMLTableCellElement>(null),
-  };
-  const { root, table, scrollViewport, header, footer, selectionColumnHeader } = refs;
+  // Hooks must not sit inside an object literal: React Compiler memoizes the literal and skips
+  // the `useRef` calls on re-renders, which shifts the hook order.
+  const root = useRef<HTMLDivElement>(null);
+  const table = useRef<HTMLTableElement>(null);
+  const scrollViewport = useRef<HTMLElement>(null);
+  const header = useRef<HTMLTableSectionElement>(null);
+  const footer = useRef<HTMLTableSectionElement>(null);
+  const selectionColumnHeader = useRef<HTMLTableCellElement>(null);
+  const refs = { root, table, scrollViewport, header, footer, selectionColumnHeader };
   const [scrollViewportElement, scrollViewportRef] = useTrackedElement(scrollViewport);
   const [headerElement, headerRef] = useTrackedElement(header);
   const [footerElement, footerRef] = useTrackedElement(footer);
@@ -83,7 +83,6 @@ export function useDataTableInjectCssVariables({
     processScrollingRef.current();
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `root` is a ref destructured from an object, which biome cannot track
   useEffect(() => {
     return observe(
       headerElement,
@@ -94,7 +93,6 @@ export function useDataTableInjectCssVariables({
     );
   }, [headerElement]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `root` is a ref destructured from an object, which biome cannot track
   useEffect(() => {
     return observe(
       footerElement,
@@ -105,7 +103,6 @@ export function useDataTableInjectCssVariables({
     );
   }, [footerElement]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `root` is a ref destructured from an object, which biome cannot track
   useEffect(() => {
     return observe(
       selectionColumnHeaderElement,
