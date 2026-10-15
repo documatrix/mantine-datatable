@@ -81,11 +81,19 @@ export default function ContributeAndSupportPage() {
               titles.
             </strong>
             <br />
+            PRs are squash-merged, so the PR title becomes the commit message on <Code>main</Code>.
+            <br />
             Releases are automated with{' '}
-            <ExternalLink to="https://github.com/googleapis/release-please">release-please</ExternalLink>, which derives
-            version bumps and the changelog from commit messages. Merging into <Code>main</Code> does not release
-            anything by itself — merging the rolling release PR cuts the release, publishes the package and deploys this
-            website, so <Code>main</Code> may be ahead of the latest released version.
+            <ExternalLink to="https://github.com/googleapis/release-please">release-please</ExternalLink>: every merge
+            to <Code>main</Code> updates a single rolling release PR that accumulates all releasable changes since the
+            last release. The proposed version follows the accumulated commit types — <Code>fix</Code> bumps patch,{' '}
+            <Code>feat</Code> bumps minor, a breaking change bumps major, and types like <Code>chore</Code> or{' '}
+            <Code>docs</Code> don’t trigger a release at all.
+            <br />
+            <strong>Merging the release PR is the release</strong> — it tags the version, publishes the package to npm
+            and deploys this website. Until then nothing ships, so <Code>main</Code> may be ahead of the latest released
+            version. A release always contains everything on <Code>main</Code> — if something must not ship yet, don’t
+            merge it.
           </li>
         </Box>
       </Txt>
