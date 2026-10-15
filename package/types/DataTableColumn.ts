@@ -51,6 +51,13 @@ export type DataTableColumn<T = Record<string, unknown>> = {
   resizable?: boolean;
 
   /**
+   * If true, dragging the resize handle only moves a guide line and the new width is applied when
+   * the handle is dropped. Use for columns whose cells are expensive to lay out on every frame
+   * (e.g. cells that measure themselves); other columns keep resizing live.
+   */
+  deferredResize?: boolean;
+
+  /**
    * If set, the column will be pinned to the specified side of the table.
    * If `pinnable` is false or undefined, this is a static pin (not changeable by user).
    * If `pinnable` is true, this is the initial pinning state (user can change it).

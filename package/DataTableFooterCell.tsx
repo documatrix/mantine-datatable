@@ -4,6 +4,7 @@ import type { PinnedColumnInfo } from './hooks';
 import { useMediaQueryStringOrFunction } from './hooks';
 import type { DataTableColumn } from './types';
 import { ELLIPSIS, NOWRAP, TEXT_ALIGN_CENTER, TEXT_ALIGN_LEFT, TEXT_ALIGN_RIGHT } from './utilityClasses';
+import { columnWidthValue } from './utils';
 
 type DataTableFooterCellProps<T> = {
   className: string | undefined;
@@ -11,7 +12,7 @@ type DataTableFooterCellProps<T> = {
   pinnedInfo: PinnedColumnInfo | undefined;
   visibleMediaQuery: string | ((theme: MantineTheme) => string) | undefined;
   title: React.ReactNode | undefined;
-} & Pick<DataTableColumn<T>, 'noWrap' | 'ellipsis' | 'textAlign' | 'width'>;
+} & Pick<DataTableColumn<T>, 'accessor' | 'noWrap' | 'ellipsis' | 'textAlign' | 'width'>;
 
 export function DataTableFooterCell<T>({
   className,
@@ -23,8 +24,10 @@ export function DataTableFooterCell<T>({
   ellipsis,
   textAlign,
   width,
+  accessor,
 }: DataTableFooterCellProps<T>) {
   if (!useMediaQueryStringOrFunction(visibleMediaQuery)) return null;
+  const widthValue = columnWidthValue(String(accessor), width);
   return (
     <TableTh
       data-pinned={pinnedInfo?.position}
@@ -41,9 +44,9 @@ export function DataTableFooterCell<T>({
       )}
       style={[
         {
-          width,
-          minWidth: width,
-          maxWidth: width,
+          width: widthValue,
+          minWidth: widthValue,
+          maxWidth: widthValue,
         },
         style,
         pinnedInfo && {

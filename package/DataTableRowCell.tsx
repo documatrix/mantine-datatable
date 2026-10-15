@@ -12,7 +12,7 @@ import {
   TEXT_ALIGN_LEFT,
   TEXT_ALIGN_RIGHT,
 } from './utilityClasses';
-import { getValueAtPath } from './utils';
+import { columnWidthValue, getValueAtPath } from './utils';
 
 type DataTableRowCellProps<T> = {
   className: string | undefined;
@@ -51,6 +51,7 @@ export function DataTableRowCell<T>({
   customCellAttributes,
 }: DataTableRowCellProps<T>) {
   if (!useMediaQueryStringOrFunction(visibleMediaQuery)) return null;
+  const widthValue = columnWidthValue(String(accessor), width);
   return (
     <TableTd
       data-pinned={pinnedInfo?.position}
@@ -69,9 +70,9 @@ export function DataTableRowCell<T>({
       )}
       style={[
         {
-          width,
-          minWidth: width,
-          maxWidth: width,
+          width: widthValue,
+          minWidth: widthValue,
+          maxWidth: widthValue,
         },
         style,
         pinnedInfo && {

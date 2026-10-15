@@ -13,7 +13,7 @@ import { IconGripVertical } from './icons/IconGripVertical';
 import { IconX } from './icons/IconX';
 import type { DataTableColumn, DataTableSortProps } from './types';
 import { ELLIPSIS, NOWRAP, TEXT_ALIGN_CENTER, TEXT_ALIGN_LEFT, TEXT_ALIGN_RIGHT } from './utilityClasses';
-import { humanize } from './utils';
+import { columnWidthValue, humanize } from './utils';
 
 type DataTableHeaderCellProps<T> = {
   className: string | undefined;
@@ -32,6 +32,7 @@ type DataTableHeaderCellProps<T> = {
   | 'toggleable'
   | 'pinnable'
   | 'resizable'
+  | 'deferredResize'
   | 'textAlign'
   | 'width'
   | 'filter'
@@ -53,6 +54,7 @@ export function DataTableHeaderCell<T>({
   toggleable,
   pinnable,
   resizable,
+  deferredResize,
   sortIcons,
   textAlign,
   width,
@@ -73,6 +75,7 @@ export function DataTableHeaderCell<T>({
     columnsPinning,
     setColumnsPinning,
   } = useDataTableColumnsContext();
+  const widthValue = columnWidthValue(String(accessor), width);
   const [dragOver, setDragOver] = useState<boolean>(false);
   const columnRef = useRef<HTMLTableCellElement | null>(null);
 
@@ -168,8 +171,8 @@ export function DataTableHeaderCell<T>({
       )}
       style={[
         {
-          width,
-          ...(!resizable ? { minWidth: width, maxWidth: width } : {}),
+          width: widthValue,
+          ...(!resizable ? { minWidth: widthValue, maxWidth: widthValue } : {}),
         },
         style,
         pinnedInfo && {
@@ -265,7 +268,11 @@ export function DataTableHeaderCell<T>({
         ) : null}
       </Group>
       {resizable && accessor !== '__selection__' ? (
-        <DataTableResizableHeaderHandle accessor={accessor as string} columnRef={columnRef} />
+        <DataTableResizableHeaderHandle
+          accessor={accessor as string}
+          columnRef={columnRef}
+          deferred={!!deferredResize}
+        />
       ) : null}
     </TableTh>
   );

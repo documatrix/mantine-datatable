@@ -203,3 +203,15 @@ export function needsRightBorder(
   if (!withColumnBorders) return false;
   return !isLastGroup || hasMoreColumnsAfter;
 }
+
+// While a column is dragged, the handle writes the live width as this variable on the table, so
+// header and body cells follow the pointer without a React render. The committed width stays the
+// fallback and the variable is removed once the drag ends.
+export function columnWidthVar(accessor: string) {
+  return `--mantine-datatable-column-width-${accessor.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+}
+
+export function columnWidthValue(accessor: string, width: string | number | undefined) {
+  if (width === undefined) return undefined;
+  return `var(${columnWidthVar(accessor)}, ${typeof width === 'number' ? `${width}px` : width})`;
+}

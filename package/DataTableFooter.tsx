@@ -48,6 +48,7 @@ export function DataTableFooter<T>({
           return (
             <DataTableFooterCell<T>
               key={accessor as React.Key}
+              accessor={accessor}
               pinnedInfo={pinnedMap.get(String(accessor))}
               className={footerClassName}
               style={footerStyle}
