@@ -36,9 +36,12 @@ export default async function VirtualizationExamplePage() {
       <CodeBlock code={code['VirtualizationExample.tsx']} />
       <Txt info>
         Virtualization requires the table to be vertically scrollable, so make sure to constrain its <Code>height</Code>{' '}
-        or <Code>maxHeight</Code>. Since rows are measured dynamically as they are rendered, the{' '}
-        <Code>virtualizedRowHeight</Code> estimate doesn’t need to be exact; you can also tune the number of rows
-        rendered outside the viewport with <Code>virtualizedOverscan</Code>.
+        or <Code>maxHeight</Code>. The first rendered row is measured once and its height is used for every row, so the
+        scrollable area stays stable while scrolling; set <Code>virtualizedRowHeight</Code> only if the table starts
+        empty or you want a different estimate. Rows with varying heights (for instance with <Code>rowExpansion</Code>,
+        which enables it automatically) need <Code>virtualizedMeasureRows</Code> so every rendered row is measured and
+        re-measured on resize. You can also tune the number of rows rendered outside the viewport with{' '}
+        <Code>virtualizedOverscan</Code>.
       </Txt>
       <PageSubtitle value="Combining virtualization with other features" />
       <Txt>

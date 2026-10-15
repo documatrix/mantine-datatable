@@ -104,6 +104,7 @@ export function useRowVirtualization({
 
   // The estimate is baked into the virtualizer's measurement cache, so a changed estimate has
   // to reset it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `estimatedRowHeight` is the trigger, the virtualizer reads it through `estimateSize`
   useEffect(() => {
     if (enabled) virtualizer.measure();
   }, [enabled, estimatedRowHeight, virtualizer]);

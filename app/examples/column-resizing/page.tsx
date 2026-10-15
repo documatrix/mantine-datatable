@@ -10,6 +10,7 @@ import { UnorderedList } from '~/components/UnorderedList';
 import { readCodeFile } from '~/lib/code';
 import { allPromiseProps, getRouteMetadata } from '~/lib/utils';
 import ResizingComplexExample from './ResizingComplexExample';
+import ResizingDeferredExample from './ResizingDeferredExample';
 import ResizingExample from './ResizingExample';
 
 const PATH: Route = '/examples/column-resizing';
@@ -20,6 +21,7 @@ export default async function DraggingExamplePage() {
   const code = await allPromiseProps({
     'ResizingExample.tsx': readCodeFile<string>(`${PATH}/ResizingExample.tsx`),
     'ResizingComplexExample.tsx': readCodeFile<string>(`${PATH}/ResizingComplexExample.tsx`),
+    'ResizingDeferredExample.tsx': readCodeFile<string>(`${PATH}/ResizingDeferredExample.tsx`),
   });
 
   return (
@@ -55,6 +57,17 @@ export default async function DraggingExamplePage() {
         <br />
         You may also set up the column with to <Code>initial</Code> by double-clicking on the resize handle.
       </Txt>
+      <PageSubtitle value="Deferring the resize" />
+      <Txt>
+        Columns resize live while you drag: the new widths are written to the DOM on every mouse move and only committed
+        to React state when you drop the handle, so rows don’t re-render during the drag. Cells that measure themselves
+        on every width change (such as an <Code>OverflowList</Code> that decides how many items fit) still have to do
+        that work on every frame, for every visible row. Set <Code>deferredResize: true</Code> on such columns: a guide
+        line follows the pointer and the width is applied once, on drop. Try the <strong>Keywords</strong> column below
+        and compare it with the <strong>Name</strong> column:
+      </Txt>
+      <ResizingDeferredExample />
+      <CodeBlock code={code['ResizingDeferredExample.tsx']} />
       <PageSubtitle value="Complex usage" />
       <ResizingComplexExample />
       <CodeBlock code={code['ResizingComplexExample.tsx']} />
