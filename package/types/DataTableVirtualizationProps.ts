@@ -13,12 +13,19 @@ export type DataTableVirtualizationProps = {
   virtualized?: boolean;
 
   /**
-   * Estimated row height in pixels, used by the virtualizer to compute the scrollable area size
-   * before rows are actually measured.
-   * Rendered rows are measured dynamically, so this doesn't need to be exact.
-   * @default 40
+   * Row height in pixels used by the virtualizer for rows that have not been measured.
+   * By default the first rendered row is measured once and its height is used for all rows,
+   * so this only needs to be set when the table starts empty or rows differ a lot in height.
    */
   virtualizedRowHeight?: number;
+
+  /**
+   * If true, every rendered row is measured and re-measured on resize, so rows may have
+   * different heights. Costs a ResizeObserver per rendered row and can shift the scroll
+   * position while scrolling, so leave it off for uniform rows.
+   * @default true when `rowExpansion` is set, false otherwise
+   */
+  virtualizedMeasureRows?: boolean;
 
   /**
    * Number of extra rows to render above and below the visible area when virtualization

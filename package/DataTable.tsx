@@ -21,6 +21,7 @@ import {
   useOptionalCallbackRef,
   useRowExpansion,
   useRowVirtualization,
+  useShallowStable,
   useStableCallback,
 } from './hooks';
 import type { DataTableProps } from './types';
@@ -151,7 +152,8 @@ export function DataTable<T>({
   rowFactory,
   tableWrapper,
   virtualized,
-  virtualizedRowHeight = 40,
+  virtualizedRowHeight,
+  virtualizedMeasureRows,
   virtualizedOverscan = 15,
   virtualizerRef,
   ...otherProps
@@ -253,6 +255,7 @@ export function DataTable<T>({
     headerElement,
     footerElement,
     rowHeight: virtualizedRowHeight,
+    measureRows: virtualizedMeasureRows ?? !!rowExpansion,
     overscan: virtualizedOverscan,
     getItemKey: getVirtualItemKey,
     virtualizerRef,
@@ -275,6 +278,7 @@ export function DataTable<T>({
     return () => cancelAnimationFrame(raf);
   }, [fetching, records, scrollViewportElementRef]);
 
+  const stableSelectionCheckboxProps = useShallowStable(selectionCheckboxProps);
   const selectionColumnVisible = !!selectedRecords;
   const selectedRecordIdsSet = selectedRecords
     ? new Set(selectedRecords.map((record) => getRecordId(record, idAccessor)))
@@ -376,7 +380,7 @@ export function DataTable<T>({
         selectionChecked={selectedRecordIdsSet?.has(recordId) ?? false}
         onSelectionChange={rowSelectionChangeHandler}
         isRecordSelectable={isRecordSelectable}
-        selectionCheckboxProps={selectionCheckboxProps}
+        selectionCheckboxProps={stableSelectionCheckboxProps}
         getSelectionCheckboxProps={getRecordSelectionCheckboxProps}
         onClick={stableOnRowClick}
         onDoubleClick={stableOnRowDoubleClick}

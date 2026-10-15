@@ -1,5 +1,5 @@
 import { useVirtualizer, type VirtualItem, type Virtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
 
 type UseRowVirtualizationOptions = {
@@ -8,11 +8,14 @@ type UseRowVirtualizationOptions = {
   scrollElement: HTMLElement | null;
   headerElement: HTMLElement | null;
   footerElement: HTMLElement | null;
-  rowHeight: number;
+  rowHeight: number | undefined;
+  measureRows: boolean;
   overscan: number;
   getItemKey: ((index: number) => string | number) | undefined;
   virtualizerRef: React.RefObject<Virtualizer<HTMLElement, HTMLTableRowElement> | null> | undefined;
 };
+
+const DEFAULT_ROW_HEIGHT = 40;
 
 export type RowVirtualizationInfo = {
   virtualItems: VirtualItem[];
@@ -46,10 +49,17 @@ export function useRowVirtualization({
   headerElement,
   footerElement,
   rowHeight,
+  measureRows,
   overscan,
   getItemKey,
   virtualizerRef,
 }: UseRowVirtualizationOptions): RowVirtualizationInfo | null {
+  // Height of the first rendered row, used as the estimate for all rows when no `rowHeight`
+  // is given.
+  const [firstRowHeight, setFirstRowHeight] = useState<number | null>(null);
+  const firstRowMeasuredRef = useRef(false);
+  const estimatedRowHeight = rowHeight ?? firstRowHeight ?? DEFAULT_ROW_HEIGHT;
+
   // The sticky header and footer cover the bottom of the scrolled-to range, as tbody starts below the header.
   const [stickyHeight, setStickyHeight] = useState(0);
 
@@ -73,7 +83,7 @@ export function useRowVirtualization({
     count,
     enabled,
     getScrollElement: () => scrollElement,
-    estimateSize: () => rowHeight,
+    estimateSize: () => estimatedRowHeight,
     overscan,
     scrollPaddingEnd: stickyHeight,
     getItemKey,
@@ -92,10 +102,24 @@ export function useRowVirtualization({
     };
   }, [enabled, virtualizer, virtualizerRef]);
 
+  // The estimate is baked into the virtualizer's measurement cache, so a changed estimate has
+  // to reset it.
+  useEffect(() => {
+    if (enabled) virtualizer.measure();
+  }, [enabled, estimatedRowHeight, virtualizer]);
+
   // Measuring can make the virtualizer flushSync, which React forbids (and warns about) inside ref callbacks.
   const measureRef = useCallback(
-    (element: HTMLTableRowElement | null) => queueMicrotask(() => virtualizer.measureElement(element)),
-    [virtualizer]
+    (element: HTMLTableRowElement | null) => {
+      if (measureRows) {
+        queueMicrotask(() => virtualizer.measureElement(element));
+        return;
+      }
+      if (!element || rowHeight !== undefined || firstRowMeasuredRef.current) return;
+      firstRowMeasuredRef.current = true;
+      setFirstRowHeight(measureRowWithTrailingSiblings(element));
+    },
+    [measureRows, rowHeight, virtualizer]
   );
 
   // The virtualizer only observes the rows themselves, so it never notices a row expansion row
