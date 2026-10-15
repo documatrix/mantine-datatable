@@ -3,6 +3,13 @@
 The following is a list of notable changes to the Mantine DataTable component.  
 Minor versions that are not listed in the changelog are bug fixes and small improvements.
 
+## [0.2.0](https://github.com/documatrix/mantine-datatable/compare/mantine-datatable-v0.1.0...mantine-datatable-v0.2.0) (2026-10-15)
+
+
+### Features
+
+* add opt-in row virtualization ([#4](https://github.com/documatrix/mantine-datatable/issues/4)) ([326c3e6](https://github.com/documatrix/mantine-datatable/commit/326c3e640faed8bc9cd584815c6b2be6a56620cf))
+
 ## 0.1.0 (2026-08-02)
 
 
