@@ -18,7 +18,7 @@ The [lightweight](https://bundlephobia.com/package/@neeyo/mantine-datatable), de
 
 ## Features
 
-- **Lightweight** - no external dependencies, [no bloat](https://bundlephobia.com/package/@neeyo/mantine-datatable)
+- **Lightweight** - [no bloat](https://bundlephobia.com/package/@neeyo/mantine-datatable), with [@tanstack/react-virtual](https://tanstack.com/virtual) as the only runtime dependency besides the Mantine peer dependencies
 - **Dark-theme aware** - automatically adapts to the current [Mantine color scheme](https://mantine.dev/theming/color-schemes/)
 - **[Fully customizable](https://documatrix.github.io/mantine-datatable/examples/overriding-the-default-styles)** - you can customize the look and feel of the table and its components
 - **[Asynchronous data loading](https://documatrix.github.io/mantine-datatable/examples/asynchronous-data-loading)** - load data from a remote API endpoint and show a loading indicator while waiting for the response
@@ -29,6 +29,7 @@ The [lightweight](https://bundlephobia.com/package/@neeyo/mantine-datatable), de
 - **[Nesting](https://documatrix.github.io/mantine-datatable/examples/nested-tables)** - nest tables to show hierarchical data
 - **[Additive batch rows selection](https://documatrix.github.io/mantine-datatable/examples/records-selection)** - select or deselect ranges of rows using the Shift key
 - **[Automatically-scrollable](https://documatrix.github.io/mantine-datatable/examples/scrollable-vs-auto-height)** - automatically scrollable or auto-height
+- **[Virtualization](https://documatrix.github.io/mantine-datatable/examples/virtualization)** - smoothly handle many thousands of records by only rendering the visible rows, powered by [@tanstack/react-virtual](https://tanstack.com/virtual)
 - **[AutoAnimate support](https://documatrix.github.io/mantine-datatable/examples/using-with-auto-animate)** - animate row sorting, addition and removal
 - **[Column reordering, toggling](https://documatrix.github.io/mantine-datatable/examples/column-dragging-and-toggling)** and **[resizing](https://documatrix.github.io/mantine-datatable/examples/column-resizing)** - persisted to local storage
 - **[Drag-and-drop support](https://documatrix.github.io/mantine-datatable/examples/row-dragging)** - implemented using [@hello-pangea/dnd](https://github.com/hello-pangea/dnd)

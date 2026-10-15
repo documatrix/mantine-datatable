@@ -144,6 +144,11 @@ export const ROUTES: RouteInfo[] = [
     description: `Example: how to implement infinite scrolling with ${PRODUCT_NAME}`,
   },
   {
+    href: '/examples/virtualization',
+    title: 'Virtualization',
+    description: `Example: virtualizing ${PRODUCT_NAME} rows to smoothly handle thousands of records`,
+  },
+  {
     href: '/examples/searching-and-filtering',
     title: 'Searching and filtering',
     description: `Example: searching and filtering data with ${PRODUCT_NAME}`,

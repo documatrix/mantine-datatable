@@ -124,11 +124,11 @@
     background: inherit;
   }
 
-  &[data-striped] tbody tr:nth-of-type(odd) {
+  &[data-striped] tbody tr[data-odd] {
     background: var(--mantine-datatable-striped-color);
   }
 
-  &[data-highlight-on-hover] tbody tr:hover {
+  &[data-highlight-on-hover] tbody tr:not(.mantine-datatable-spacer-row):hover {
     background: var(--mantine-datatable-highlight-on-hover-color);
   }
 

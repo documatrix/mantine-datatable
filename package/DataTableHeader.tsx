@@ -174,6 +174,7 @@ export function DataTableHeader<T>({
             toggleable,
             pinnable,
             resizable,
+            deferredResize,
             titleClassName,
             titleStyle,
             filter,
@@ -200,6 +201,7 @@ export function DataTableHeader<T>({
               pinnable={pinnable}
               // we won't display the resize handle for the last column to avoid overflow render issues
               resizable={resizable && index < columns.length - 1}
+              deferredResize={deferredResize}
               sortStatus={sortStatus}
               sortIcons={sortIcons}
               sortKey={sortKey}

@@ -1,11 +1,12 @@
 import type { MantineTheme } from '@mantine/core';
 import { type CheckboxProps, type MantineColor, type MantineStyleProp, TableTr } from '@mantine/core';
 import clsx from 'clsx';
+import { memo } from 'react';
 import { getRowCssVariables } from './cssVariables';
 import { DataTableRowCell } from './DataTableRowCell';
 import { DataTableRowExpansion } from './DataTableRowExpansion';
 import { DataTableRowSelectorCell } from './DataTableRowSelectorCell';
-import type { PinnedColumnInfo, useRowExpansion } from './hooks';
+import type { PinnedColumnInfo, RowExpansionInfo } from './hooks';
 import type {
   DataTableCellClickHandler,
   DataTableColumn,
@@ -28,7 +29,7 @@ type DataTableRowProps<T> = {
   selectionTrigger: DataTableSelectionTrigger;
   selectionVisible: boolean;
   selectionChecked: boolean;
-  onSelectionChange: React.MouseEventHandler | undefined;
+  onSelectionChange: ((record: T, index: number, event: React.MouseEvent) => void) | undefined;
   isRecordSelectable: ((record: T, index: number) => boolean) | undefined;
   selectionCheckboxProps: CheckboxProps | undefined;
   getSelectionCheckboxProps: (record: T, index: number) => CheckboxProps;
@@ -38,7 +39,9 @@ type DataTableRowProps<T> = {
   onCellClick: DataTableCellClickHandler<T> | undefined;
   onCellDoubleClick: DataTableCellClickHandler<T> | undefined;
   onCellContextMenu: DataTableCellClickHandler<T> | undefined;
-  expansion: ReturnType<typeof useRowExpansion<T>>;
+  expansion: RowExpansionInfo<T>;
+  expansionColSpan: number;
+  expanded: boolean;
   customAttributes?: (record: T, index: number) => Record<string, unknown>;
   color:
     | ((record: T, index: number) => MantineColor | undefined | { light: MantineColor; dark: MantineColor })
@@ -52,9 +55,11 @@ type DataTableRowProps<T> = {
   selectionColumnClassName: string | undefined;
   selectionColumnStyle: MantineStyleProp | undefined;
   idAccessor: string;
+  virtualizedMeasureRef?: (element: HTMLTableRowElement | null) => void;
+  virtualizedExpansionRowRef?: (element: HTMLTableRowElement | null) => (() => void) | undefined;
 } & Pick<DataTableProps<T>, 'rowFactory'>;
 
-export function DataTableRow<T>({
+function DataTableRowInner<T>({
   record,
   index,
   columns,
@@ -75,6 +80,8 @@ export function DataTableRow<T>({
   onCellDoubleClick,
   onCellContextMenu,
   expansion,
+  expansionColSpan,
+  expanded,
   customAttributes,
   color,
   backgroundColor,
@@ -84,7 +91,13 @@ export function DataTableRow<T>({
   selectionColumnClassName,
   selectionColumnStyle,
   rowFactory,
+  virtualizedMeasureRef,
+  virtualizedExpansionRowRef,
 }: Readonly<DataTableRowProps<T>>) {
+  const handleSelectionChange: React.MouseEventHandler | undefined = onSelectionChange
+    ? (event) => onSelectionChange(record, index, event)
+    : undefined;
+
   const cols = (
     <>
       {selectionVisible && (
@@ -97,7 +110,7 @@ export function DataTableRow<T>({
           withRightShadow={selectorCellShadowVisible}
           checked={selectionChecked}
           disabled={!onSelectionChange || (isRecordSelectable ? !isRecordSelectable(record, index) : false)}
-          onChange={onSelectionChange}
+          onChange={handleSelectionChange}
           checkboxProps={selectionCheckboxProps}
           getCheckboxProps={getSelectionCheckboxProps}
         />
@@ -157,16 +170,20 @@ export function DataTableRow<T>({
     </>
   );
 
+  const odd = index % 2 === 0 || undefined;
+
   const expandedElement = expansion && (
     <DataTableRowExpansion
-      colSpan={columns.filter(({ hidden }) => !hidden).length + (selectionVisible ? 1 : 0)}
-      open={expansion.isRowExpanded(record)}
+      colSpan={expansionColSpan}
+      open={expanded}
       content={expansion.content({ record, index })}
       collapseProps={expansion.collapseProps}
+      odd={odd}
+      rowRef={virtualizedExpansionRowRef}
     />
   );
 
-  const rowProps = getRowProps({
+  const baseRowProps = getRowProps({
     record,
     index,
     selectionChecked,
@@ -174,12 +191,17 @@ export function DataTableRow<T>({
     onDoubleClick,
     onContextMenu,
     expansion,
+    expanded,
     customAttributes,
     color,
     backgroundColor,
     className,
     style,
   });
+
+  const rowProps = virtualizedMeasureRef
+    ? { ...baseRowProps, ref: virtualizedMeasureRef, 'data-index': index, 'data-odd': odd }
+    : { ...baseRowProps, 'data-odd': odd };
 
   if (rowFactory) {
     return rowFactory({
@@ -199,6 +221,9 @@ export function DataTableRow<T>({
   );
 }
 
+// `memo` loses the generic, so restore the inner signature.
+export const DataTableRow = memo(DataTableRowInner) as typeof DataTableRowInner;
+
 type GetRowPropsArgs<T> = Readonly<
   Pick<
     DataTableRowProps<T>,
@@ -209,6 +234,7 @@ type GetRowPropsArgs<T> = Readonly<
     | 'onDoubleClick'
     | 'onContextMenu'
     | 'expansion'
+    | 'expanded'
     | 'customAttributes'
     | 'color'
     | 'backgroundColor'
@@ -225,6 +251,7 @@ export function getRowProps<T>({
   onDoubleClick,
   onContextMenu,
   expansion,
+  expanded,
   customAttributes,
   color,
   backgroundColor,
@@ -246,9 +273,9 @@ export function getRowProps<T>({
 
     onClick: (e: React.MouseEvent<HTMLTableRowElement, MouseEvent>) => {
       if (expansion) {
-        const { isExpandable, isRowExpanded, expandOnClick, expandRow, collapseRow } = expansion;
+        const { isExpandable, expandOnClick, expandRow, collapseRow } = expansion;
         if (isExpandable({ record, index }) && expandOnClick) {
-          if (isRowExpanded(record)) {
+          if (expanded) {
             collapseRow(record);
           } else {
             expandRow(record);

@@ -1,8 +1,9 @@
 import { rem } from '@mantine/core';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { DataTableScrollProps } from '../types/DataTableScrollProps';
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
 import { useStableValue } from './useStableValue';
+import { useTrackedElement } from './useTrackedElement';
 
 const VAR_HEADER_HEIGHT = '--mantine-datatable-header-height';
 const VAR_FOOTER_HEIGHT = '--mantine-datatable-footer-height';
@@ -59,58 +60,58 @@ export function useDataTableInjectCssVariables({
   scrollCallbacks,
   withRowBorders,
 }: UseDataTableInjectCssVariablesOpts) {
-  const refs = {
-    root: useRef<HTMLDivElement>(null),
-    table: useRef<HTMLTableElement>(null),
-    scrollViewport: useRef<HTMLElement>(null),
-    header: useRef<HTMLTableSectionElement>(null),
-    footer: useRef<HTMLTableSectionElement>(null),
-    selectionColumnHeader: useRef<HTMLTableCellElement>(null),
-  };
-  const { root, table, scrollViewport, header, footer, selectionColumnHeader } = refs;
+  // Hooks must not sit inside an object literal: React Compiler memoizes the literal and skips
+  // the `useRef` calls on re-renders, which shifts the hook order.
+  const root = useRef<HTMLDivElement>(null);
+  const table = useRef<HTMLTableElement>(null);
+  const scrollViewport = useRef<HTMLElement>(null);
+  const header = useRef<HTMLTableSectionElement>(null);
+  const footer = useRef<HTMLTableSectionElement>(null);
+  const selectionColumnHeader = useRef<HTMLTableCellElement>(null);
+  const refs = { root, table, scrollViewport, header, footer, selectionColumnHeader };
+  const [scrollViewportElement, scrollViewportRef] = useTrackedElement(scrollViewport);
+  const [headerElement, headerRef] = useTrackedElement(header);
+  const [footerElement, footerRef] = useTrackedElement(footer);
+  const [selectionColumnHeaderElement, selectionColumnHeaderRef] = useTrackedElement(selectionColumnHeader);
 
   const stableDependencies = useStableValue({ withRowBorders });
   const stableScrollCallbacks = useStableValue(scrollCallbacks);
   const processScrollingRef = useRef<() => void>(() => void 0);
   const processLastRowBottomBorderRef = useRef<() => void>(() => void 0);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: stable refs only
-  const onScroll = useCallback<OnScroll>((ev) => {
+  const onScroll: OnScroll = (ev) => {
     stableScrollCallbacks.current.onScroll?.(ev);
     processScrollingRef.current();
-  }, []);
+  };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
   useEffect(() => {
     return observe(
-      header.current,
+      headerElement,
       (rect) => {
         setCssVar(root.current, VAR_HEADER_HEIGHT, `${rect.height}px`);
       },
       () => setCssVar(root.current, VAR_HEADER_HEIGHT, '0')
     );
-  }, [header.current]);
+  }, [headerElement]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
   useEffect(() => {
     return observe(
-      footer.current,
+      footerElement,
       (rect) => {
         setCssVar(root.current, VAR_FOOTER_HEIGHT, `${rect.height}px`);
       },
       () => setCssVar(root.current, VAR_FOOTER_HEIGHT, '0')
     );
-  }, [footer.current]);
+  }, [footerElement]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable
   useEffect(() => {
     return observe(
-      selectionColumnHeader.current,
+      selectionColumnHeaderElement,
       (rect) => {
         setCssVar(root.current, VAR_SELECTION_COLUMN_WIDTH, `${rect.width}px`);
       },
       () => setCssVar(root.current, VAR_SELECTION_COLUMN_WIDTH, '0')
     );
-  }, [selectionColumnHeader.current]);
+  }, [selectionColumnHeaderElement]);
 
   useIsomorphicLayoutEffect(() => {
     if (typeof window === 'undefined') {
@@ -227,6 +228,13 @@ export function useDataTableInjectCssVariables({
 
   return {
     refs,
+    trackedRefs: {
+      scrollViewport: scrollViewportRef,
+      header: headerRef,
+      footer: footerRef,
+      selectionColumnHeader: selectionColumnHeaderRef,
+    },
+    trackedElements: { scrollViewport: scrollViewportElement, header: headerElement, footer: footerElement },
     onScroll,
   };
 }

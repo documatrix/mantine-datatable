@@ -45,7 +45,7 @@ export function useDataTablePinnedColumns<T>({
     const isTheadSource = !!theadRef.current;
     const measurementRow = isTheadSource
       ? measurementSection.querySelector<HTMLTableRowElement>('tr:last-of-type')
-      : measurementSection.querySelector<HTMLTableRowElement>('tr:first-of-type');
+      : measurementSection.querySelector<HTMLTableRowElement>('tr.mantine-datatable-row');
     if (!measurementRow) return;
 
     const isRtl = getComputedStyle(measurementSection).direction === 'rtl';
@@ -154,15 +154,30 @@ export function useDataTablePinnedColumns<T>({
     if (!section) return;
 
     const isTheadSource = !!theadRef.current;
-    const row = isTheadSource ? section.querySelector('tr:last-of-type') : section.querySelector('tr:first-of-type');
-    if (!row) return;
-
     const observer = new ResizeObserver(recalculate);
-    row.querySelectorAll(isTheadSource ? 'th' : 'td').forEach((cell) => {
-      observer.observe(cell);
-    });
+    let observedRow: Element | null = null;
+    const observeRow = () => {
+      if (observedRow?.isConnected) return;
+      const row = isTheadSource
+        ? section.querySelector('tr:last-of-type')
+        : section.querySelector('tr.mantine-datatable-row');
+      observedRow = row;
+      observer.disconnect();
+      row?.querySelectorAll(isTheadSource ? 'th' : 'td').forEach((cell) => {
+        observer.observe(cell);
+      });
+    };
+    observeRow();
+    if (isTheadSource) return () => observer.disconnect();
 
-    return () => observer.disconnect();
+    // The measured body row gets replaced when records change or the virtualized window moves.
+    const mutationObserver = new MutationObserver(observeRow);
+    mutationObserver.observe(section, { childList: true });
+
+    return () => {
+      observer.disconnect();
+      mutationObserver.disconnect();
+    };
   }, [theadRef, tbodyRef, recalculate]);
 
   useIsomorphicLayoutEffect(recalculate, [recalculate]);

@@ -1,18 +1,25 @@
 import { useDirection } from '@mantine/core';
 import type { RefObject } from 'react';
 import { useCallback, useRef, useState } from 'react';
+import { createPortal, flushSync } from 'react-dom';
 import { useDataTableColumnsContext } from './DataTableColumns.context';
+import { columnWidthVar } from './utils';
 
 type DataTableResizableHeaderHandleProps = {
   accessor: string;
   columnRef: RefObject<HTMLTableCellElement | null>;
+  /** Only move a guide line while dragging and apply the width on drop. */
+  deferred: boolean;
 };
+
+type ResizeGuide = { x: number; top: number; height: number };
 
 const MIN_COLUMN_WIDTH = 50;
 
 export const DataTableResizableHeaderHandle = (props: DataTableResizableHeaderHandleProps) => {
-  const { accessor, columnRef } = props;
+  const { accessor, columnRef, deferred } = props;
   const [isResizing, setIsResizing] = useState(false);
+  const [guide, setGuide] = useState<ResizeGuide | null>(null);
   const startXRef = useRef<number>(0);
   const originalWidthsRef = useRef<{ current: number; next: number }>({ current: 0, next: 0 });
 
@@ -64,6 +71,15 @@ export const DataTableResizableHeaderHandle = (props: DataTableResizableHeaderHa
         next: startNextWidth,
       };
 
+      const table = currentColumn.closest('table');
+      const currentVar = columnWidthVar(accessor);
+      const nextVar = columnWidthVar(nextAccessor);
+      let liveWidths: { current: number; next: number } | null = null;
+      const guideBounds = table?.closest('.mantine-datatable')?.getBoundingClientRect();
+
+      // Live widths go to the DOM as CSS variables (see `columnWidthValue`); React only learns
+      // the result on mouseup, so rows don't re-render on every mousemove. Deferred columns
+      // only move the guide line until then.
       const handleMouseMove = (moveEvent: MouseEvent) => {
         let deltaX = moveEvent.clientX - startXRef.current;
         if (isRTL) deltaX = -deltaX;
@@ -73,25 +89,41 @@ export const DataTableResizableHeaderHandle = (props: DataTableResizableHeaderHa
 
         const constrainedDelta = Math.max(-maxShrinkCurrent, Math.min(deltaX, maxShrinkNext));
 
-        const finalCurrentWidth = originalWidthsRef.current.current + constrainedDelta;
-        const finalNextWidth = originalWidthsRef.current.next - constrainedDelta;
-
-        // State-driven update: pushes the new widths through `effectiveColumns`
-        // and keeps React in sync with the DOM. With table-layout: fixed the
-        // browser honors the new pixel widths precisely.
-        setMultipleColumnWidths([
-          { accessor, width: `${finalCurrentWidth}px` },
-          { accessor: nextAccessor, width: `${finalNextWidth}px` },
-        ]);
+        liveWidths = {
+          current: originalWidthsRef.current.current + constrainedDelta,
+          next: originalWidthsRef.current.next - constrainedDelta,
+        };
+        if (deferred) {
+          setGuide({
+            x: startXRef.current + (isRTL ? -constrainedDelta : constrainedDelta),
+            top: guideBounds?.top ?? 0,
+            height: guideBounds?.height ?? 0,
+          });
+          return;
+        }
+        table?.style.setProperty(currentVar, `${liveWidths.current}px`);
+        table?.style.setProperty(nextVar, `${liveWidths.next}px`);
       };
 
       const handleMouseUp = () => {
         setIsResizing(false);
+        setGuide(null);
 
         document.body.style.cursor = 'initial';
         document.body.style.userSelect = 'initial';
 
-        endResize();
+        // Commit synchronously so the fallback widths already match when the variables go away.
+        flushSync(() => {
+          if (liveWidths) {
+            setMultipleColumnWidths([
+              { accessor, width: `${liveWidths.current}px` },
+              { accessor: nextAccessor, width: `${liveWidths.next}px` },
+            ]);
+          }
+          endResize();
+        });
+        table?.style.removeProperty(currentVar);
+        table?.style.removeProperty(nextVar);
 
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
@@ -103,7 +135,7 @@ export const DataTableResizableHeaderHandle = (props: DataTableResizableHeaderHa
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     },
-    [accessor, columnRef, isRTL, setMultipleColumnWidths, beginResize, endResize]
+    [accessor, columnRef, deferred, isRTL, setMultipleColumnWidths, beginResize, endResize]
   );
 
   const handleDoubleClick = useCallback(() => {
@@ -125,15 +157,25 @@ export const DataTableResizableHeaderHandle = (props: DataTableResizableHeaderHa
   }, [accessor, columnRef, setMultipleColumnWidths]);
 
   return (
-    <div
-      className="mantine-datatable-header-resizable-handle"
-      style={{
-        cursor: isResizing ? 'col-resize' : undefined,
-      }}
-      onMouseDown={handleMouseDown}
-      onDoubleClick={handleDoubleClick}
-      onClick={(event) => event.stopPropagation()} // Prevent column sorting
-      title="Drag to resize column, double-click to reset"
-    />
+    <>
+      {guide &&
+        createPortal(
+          <div
+            className="mantine-datatable-resize-guide"
+            style={{ left: guide.x, top: guide.top, height: guide.height }}
+          />,
+          document.body
+        )}
+      <div
+        className="mantine-datatable-header-resizable-handle"
+        style={{
+          cursor: isResizing ? 'col-resize' : undefined,
+        }}
+        onMouseDown={handleMouseDown}
+        onDoubleClick={handleDoubleClick}
+        onClick={(event) => event.stopPropagation()} // Prevent column sorting
+        title="Drag to resize column, double-click to reset"
+      />
+    </>
   );
 };

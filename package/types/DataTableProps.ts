@@ -11,6 +11,7 @@ import type { DataTableColorProps } from './DataTableColorProps';
 import type { DataTableColumnProps } from './DataTableColumnProps';
 import type { DataTableDefaultColumnProps } from './DataTableDefaultColumnProps';
 import type { DataTableEmptyStateProps } from './DataTableEmptyStateProps';
+import type { DataTableIdAccessor } from './DataTableIdAccessor';
 import type { DataTableLoaderProps } from './DataTableLoaderProps';
 import type { DataTableOuterBorderProps } from './DataTableOuterBorderProps';
 import type { DataTablePaginationProps } from './DataTablePaginationProps';
@@ -20,6 +21,7 @@ import type { DataTableScrollProps } from './DataTableScrollProps';
 import type { DataTableSelectionProps } from './DataTableSelectionProps';
 import type { DataTableSortProps } from './DataTableSortProps';
 import type { DataTableVerticalAlign } from './DataTableVerticalAlign';
+import type { DataTableVirtualizationProps } from './DataTableVirtualizationProps';
 
 export type DataTableProps<T = Record<string, unknown>> = {
   /**
@@ -124,7 +126,7 @@ export type DataTableProps<T = Record<string, unknown>> = {
    * (i.e. `department.name` or `department.company.name`).
    * @default `id`
    */
-  idAccessor?: (keyof T | (string & NonNullable<unknown>)) | ((record: T) => React.Key);
+  idAccessor?: DataTableIdAccessor<T>;
 
   /**
    * Visible records.
@@ -206,12 +208,15 @@ export type DataTableProps<T = Record<string, unknown>> = {
    * Optional style passed to each row.
    * a function that receives the current record, its index, default row props and expanded element as arguments
    * and returns a React node representing the row.
+   * Spread `rowProps` onto the rendered `tr`: its `className` and `data-*` attributes drive striping,
+   * pinned column measurement and virtualization, and its `ref` measures the row when `virtualized` is enabled;
+   * combine the latter with any ref of your own, e.g. with `mergeRefs` from `@mantine/hooks`.
    */
   rowFactory?: (props: {
     record: T;
     index: number;
     children: React.ReactNode;
-    rowProps: TableTrProps;
+    rowProps: TableTrProps & { ref?: React.Ref<HTMLTableRowElement> };
     expandedElement?: React.ReactNode;
   }) => React.ReactNode;
 
@@ -281,4 +286,5 @@ export type DataTableProps<T = Record<string, unknown>> = {
   DataTablePaginationProps &
   DataTableSortProps<T> &
   DataTableScrollProps &
-  DataTableSelectionProps<T>;
+  DataTableSelectionProps<T> &
+  DataTableVirtualizationProps;

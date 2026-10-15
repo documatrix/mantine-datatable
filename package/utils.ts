@@ -1,5 +1,5 @@
 import type { DropResult } from '@hello-pangea/dnd';
-import type { DataTableColumn, DataTableColumnGroup } from './types';
+import type { DataTableColumn, DataTableColumnGroup, DataTableIdAccessor } from './types';
 
 /**
  * Utility function that returns a humanized version of a string, e.g. "camelCase" -> "Camel Case"
@@ -46,14 +46,21 @@ export function hasStringAccessor(item: unknown): boolean {
  * Utility function that returns an array of values that are present in the first array but not in the second
  */
 export function differenceBy<T>(arr1: T[], arr2: T[], iteratee: (value: T) => unknown) {
-  return arr1.filter((c) => !arr2.map(iteratee).includes(iteratee(c)));
+  const excluded = new Set(arr2.map(iteratee));
+  return arr1.filter((c) => !excluded.has(iteratee(c)));
 }
 
 /**
  * Utility function that returns an array of unique values from a given array
  */
 export function uniqBy<T>(arr: T[], iteratee: (value: T) => unknown) {
-  return arr.filter((x, i, self) => i === self.findIndex((y) => iteratee(x) === iteratee(y)));
+  const seen = new Set<unknown>();
+  return arr.filter((x) => {
+    const key = iteratee(x);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
@@ -68,10 +75,7 @@ export function getValueAtPath<T>(obj: T, path: keyof T | (string & NonNullable<
 /**
  * Utility function that returns the record id using idAccessor
  */
-export function getRecordId<T>(
-  record: T,
-  idAccessor: keyof T | (string & NonNullable<unknown>) | ((record: T) => React.Key)
-) {
+export function getRecordId<T>(record: T, idAccessor: DataTableIdAccessor<T>) {
   return typeof idAccessor === 'string'
     ? getValueAtPath(record, idAccessor)
     : (idAccessor as (record: T) => React.Key)(record);
@@ -198,4 +202,16 @@ export function needsRightBorder(
 ): boolean {
   if (!withColumnBorders) return false;
   return !isLastGroup || hasMoreColumnsAfter;
+}
+
+// While a column is dragged, the handle writes the live width as this variable on the table, so
+// header and body cells follow the pointer without a React render. The committed width stays the
+// fallback and the variable is removed once the drag ends.
+export function columnWidthVar(accessor: string) {
+  return `--mantine-datatable-column-width-${accessor.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+}
+
+export function columnWidthValue(accessor: string, width: string | number | undefined) {
+  if (width === undefined) return undefined;
+  return `var(${columnWidthVar(accessor)}, ${typeof width === 'number' ? `${width}px` : width})`;
 }
