@@ -12,9 +12,11 @@ type DataTableColumnWidth = Record<string, string | number>;
  * 1. Until the user grabs a handle, the table stays in `table-layout: auto`
  *    so declarative widths — including `width: '0%'` on actions columns —
  *    work as documented.
- * 2. On mousedown we snapshot every header cell into pixel widths and switch
- *    to `table-layout: fixed` so pixel widths are honored strictly during
- *    the drag and afterwards.
+ * 2. On mousedown we snapshot every resizable header cell into pixel widths.
+ *    When every visible column is resizable this switches to
+ *    `table-layout: fixed`, so pixel widths are honored strictly during the
+ *    drag and afterwards. Otherwise the non-resizable columns stay at their
+ *    declared width and absorb the remaining space.
  * 3. The lock stays in place until `resetColumnsWidth` is called.
  *
  * @see https://documatrix.github.io/mantine-datatable/examples/column-resizing/
@@ -155,32 +157,40 @@ export function useDataTableColumnResize<T>({
   );
 
   /**
-   * Snapshot every header cell width into the React state. Called the moment
-   * the user grabs a handle. Idempotent: if all cells are already pixel-locked
-   * the snapshot reads back the same values.
+   * Snapshot every resizable header cell width into the React state. Called the
+   * moment the user grabs a handle. Idempotent: if all cells are already
+   * pixel-locked the snapshot reads back the same values.
+   * Returns the accessors of the resizable columns.
    */
-  const beginResize = useCallback(() => {
+  const beginResize = useCallback((): ReadonlySet<string> => {
     setIsResizing(true);
 
+    const resizable = new Set(
+      columns.filter((c) => c.resizable && c.accessor !== '__selection__').map((c) => String(c.accessor))
+    );
+
     const thead = headerRef?.current;
-    if (!thead) return;
+    if (!thead) return resizable;
 
-    const cells = Array.from(thead.querySelectorAll<HTMLTableCellElement>('th[data-accessor]'));
-    if (cells.length === 0) return;
+    const snapshot = new Map<string, string>();
 
-    const snapshot: DataTableColumnWidth[] = [];
-
-    for (const cell of cells) {
+    for (const cell of thead.querySelectorAll<HTMLTableCellElement>('th[data-accessor]')) {
       const accessor = cell.getAttribute('data-accessor');
-      if (!accessor) continue;
-      if (accessor === '__selection__') continue;
-      const width = Math.round(cell.getBoundingClientRect().width);
-      snapshot.push({ [accessor]: `${width}px` });
+      if (!accessor || !resizable.has(accessor)) continue;
+      snapshot.set(accessor, `${Math.round(cell.getBoundingClientRect().width)}px`);
     }
+    if (snapshot.size === 0) return resizable;
 
     dirtyRef.current = true;
-    setEffectiveColumnsWidth(snapshot);
-  }, [headerRef]);
+    setEffectiveColumnsWidth((prev) =>
+      prev.map((entry) => {
+        const accessor = Object.keys(entry)[0];
+        const width = snapshot.get(accessor);
+        return width === undefined ? entry : { [accessor]: width };
+      })
+    );
+    return resizable;
+  }, [columns, headerRef]);
 
   /** Clear the active-drag flag. Persistence runs from the effect once `isResizing` flips off. */
   const endResize = useCallback(() => {

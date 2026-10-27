@@ -30,7 +30,7 @@ interface DataTableColumnsContext {
   resetColumnsWidth: () => void;
 
   // Drag lifecycle: snapshot DOM widths, lock the table, then persist on release
-  beginResize: () => void;
+  beginResize: () => ReadonlySet<string>;
   endResize: () => void;
 }
 
