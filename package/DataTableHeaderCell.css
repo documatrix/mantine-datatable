@@ -78,7 +78,9 @@
     content: '';
     top: 2px;
     bottom: 2px;
-    left: 5px; /* Centered in the wider handle */
+    /* Fully inside the th: headers clip overflow, pinned ones do not, so a line crossing the
+       edge shows 1px on most columns and 2px on pinned ones. */
+    left: 3px;
     width: 2px;
     background: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
     border-radius: 1px;
@@ -86,7 +88,7 @@
 
     @mixin rtl {
       left: auto;
-      right: 5px;
+      right: 3px;
     }
   }
 
