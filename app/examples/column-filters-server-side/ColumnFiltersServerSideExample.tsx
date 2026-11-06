@@ -4,12 +4,11 @@ import { DataTable, type DataTableColumn, resolveFilters, useDataTableFilters } 
 import { Code, Stack, Text } from '@mantine/core';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import type { Employee } from '~/data';
-import { type EmployeeSearchRequest, loadDepartmentOptions, searchEmployees } from './api';
+import { type EmployeeSearchRequest, type EmployeeWithLogin, loadDepartmentOptions, searchEmployees } from './api';
 
 const PAGE_SIZE = 10;
 
-const columns: DataTableColumn<Employee>[] = [
+const columns: DataTableColumn<EmployeeWithLogin>[] = [
   {
     accessor: 'name',
     render: ({ firstName, lastName }) => `${firstName} ${lastName}`,
@@ -26,12 +25,17 @@ const columns: DataTableColumn<Employee>[] = [
     render: ({ birthDate }) => dayjs(birthDate).format('MMM D, YYYY'),
     filter: { type: 'date' },
   },
+  {
+    accessor: 'lastLogin',
+    render: ({ lastLogin }) => dayjs(lastLogin).format('MMM D, HH:mm'),
+    filter: { type: 'date', withTime: true },
+  },
 ];
 
 export function ColumnFiltersServerSideExample() {
   const { filters, setFilters } = useDataTableFilters();
   const [page, setPage] = useState(1);
-  const [result, setResult] = useState<{ records: Employee[]; total: number }>();
+  const [result, setResult] = useState<{ records: EmployeeWithLogin[]; total: number }>();
   const [fetching, setFetching] = useState(false);
 
   // Relative dates such as "last 7 days" become absolute ISO ranges here

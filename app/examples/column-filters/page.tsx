@@ -72,9 +72,11 @@ export default async function ColumnFiltersExamplePage() {
           <Code>1h30m</Code> and store numbers in the filter’s <Code>unit</Code>.
         </li>
         <li>
-          <Code>date</Code>: absolute dates match their whole period (<Code>2026-03</Code> is all of March), relative
-          dates stay relative when persisted (<Code>-1mo</Code> is always last month), and presets cover the common
-          ranges. Add a calendar from <Code>@mantine/dates</Code> with <Code>renderPicker</Code>.
+          <Code>date</Code>: a calendar in the filter popover picks a day (click it twice) or a range;{' '}
+          <Code>withTime</Code> adds start and end times. Absolute dates match their whole period (<Code>2026-03</Code>{' '}
+          is all of March), relative dates stay relative when persisted (<Code>-1mo</Code> is always last month), and
+          presets cover the common ranges. In the filter row, the calendar opens from the icon next to the input.
+          Replace the calendar with <Code>renderPicker</Code>, or hide it with <Code>withCalendar: false</Code>.
         </li>
         <li>
           <Code>boolean</Code>: yes / no.

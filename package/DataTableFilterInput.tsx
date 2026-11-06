@@ -63,6 +63,7 @@ export type DataTableFilterInputProps = {
   variant: 'popover' | 'row';
   withinPortal: boolean;
   autoFocus?: boolean;
+  openOnFocus?: boolean;
   onEscape?: () => void;
 };
 
@@ -75,6 +76,7 @@ export function DataTableFilterInput({
   variant,
   withinPortal,
   autoFocus,
+  openOnFocus = true,
   onEscape,
 }: DataTableFilterInputProps) {
   const { texts, locale, knownOptions, rememberOptions } = useDataTableFiltersContext();
@@ -369,7 +371,7 @@ export function DataTableFilterInput({
                   setSearch(event.currentTarget.value);
                   combobox.openDropdown();
                 }}
-                onFocus={() => combobox.openDropdown()}
+                onFocus={openOnFocus ? () => combobox.openDropdown() : undefined}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
               />

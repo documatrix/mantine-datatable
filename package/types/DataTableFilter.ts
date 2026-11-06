@@ -144,6 +144,15 @@ export type DataTableDurationUnit = 'ms' | 's' | 'min' | 'h' | 'd';
 export type DataTableDateFilter<T> = DataTableFilterBase<T> & {
   type: 'date';
   /**
+   * If true, the calendar in the filter popover also asks for start and end times.
+   */
+  withTime?: boolean;
+  /**
+   * Shows a calendar in the filter popover for picking a day or a range.
+   * @default true
+   */
+  withCalendar?: boolean;
+  /**
    * Presets offered while the input is empty; `false` hides them.
    */
   presets?: DataTableDatePreset[] | false;
@@ -153,7 +162,7 @@ export type DataTableDateFilter<T> = DataTableFilterBase<T> & {
    */
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   /**
-   * Renders additional UI (e.g. a calendar from `@mantine/dates`) below the input in the filter popover.
+   * Renders your own picker below the input in the filter popover, instead of the built-in calendar.
    */
   renderPicker?: (props: DataTableFilterEditorRenderProps) => React.ReactNode;
 };
@@ -250,6 +259,10 @@ export type DataTableFilterTexts = {
   addConditions: (count: number) => string;
   hint: string;
   syntax: string;
+  openCalendar: string;
+  addRange: string;
+  fromTime: string;
+  toTime: string;
   empty: string;
   notEmpty: string;
   now: string;

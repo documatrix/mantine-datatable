@@ -111,6 +111,7 @@
   ],
   "peerDependencies": {
     "@mantine/core": ">=9.0",
+    "@mantine/dates": ">=9.0",
     "@mantine/hooks": ">=9.0",
     "clsx": ">=2",
     "react": ">=19",

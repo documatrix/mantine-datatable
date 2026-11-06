@@ -8,6 +8,7 @@ import { type DataTableResolvedFilter, resolveColumnFilter } from './filters/con
 import { formatFilterCondition } from './filters/format';
 import type { PinnedColumnInfo } from './hooks';
 import { useMediaQueryStringOrFunction } from './hooks';
+import { IconCalendar } from './icons/IconCalendar';
 import type { DataTableColumn, DataTableDefaultColumnProps } from './types';
 import { columnWidthValue } from './utils';
 
@@ -112,7 +113,7 @@ function DataTableFilterRowCellContent({ filter }: { filter: DataTableResolvedFi
     );
   }
 
-  return (
+  const input = (
     <DataTableFilterInput
       filter={filter}
       conditions={conditions}
@@ -122,5 +123,21 @@ function DataTableFilterRowCellContent({ filter }: { filter: DataTableResolvedFi
       variant="row"
       withinPortal
     />
+  );
+
+  if (filter.type !== 'date' || (filter.withCalendar === false && !filter.renderPicker)) return input;
+
+  return (
+    <div className="mantine-datatable-filter-row-with-picker">
+      {input}
+      <DataTableHeaderCellFilter
+        isActive={false}
+        icon={<IconCalendar />}
+        label={texts.openCalendar}
+        filterPopoverProps={{ closeOnEscape: false, width: 320, position: 'bottom-end' }}
+      >
+        {({ close }) => <DataTableFilterEditor filter={filter} close={close} />}
+      </DataTableHeaderCellFilter>
+    </div>
   );
 }
