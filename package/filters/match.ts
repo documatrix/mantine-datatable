@@ -240,12 +240,14 @@ export function filterRecords<T>(records: T[], options: DataTableFilterRecordsOp
   return checks.length ? records.filter((record) => checks.every((check) => check(record))) : records;
 }
 
-function resolveDateCondition(
+/**
+ * Inclusive range of instants a date condition covers; `null` bounds are open.
+ */
+export function getDateConditionRange(
   condition: DataTableFilterCondition,
   now: Date,
   weekStartsOn: number | undefined
-): DataTableFilterCondition {
-  if (condition.operator === 'empty') return condition;
+): [Date | null, Date | null] {
   const period = (token: DataTableFilterScalar | null) =>
     token === null ? null : resolveDatePeriod(String(token), now, weekStartsOn);
   const last = (date: Date) => new Date(date.getTime() - 1);
@@ -267,6 +269,16 @@ function resolveDateCondition(
       }[condition.operator as 'equals' | 'gt' | 'gte' | 'lt' | 'lte'] as [Date | null, Date | null];
     }
   }
+  return range;
+}
+
+function resolveDateCondition(
+  condition: DataTableFilterCondition,
+  now: Date,
+  weekStartsOn: number | undefined
+): DataTableFilterCondition {
+  if (condition.operator === 'empty') return condition;
+  const range = getDateConditionRange(condition, now, weekStartsOn);
   return {
     operator: 'between',
     value: [range[0]?.toISOString() ?? null, range[1]?.toISOString() ?? null],

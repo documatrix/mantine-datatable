@@ -221,3 +221,29 @@
   border-radius: rem(2px);
   padding: 0;
 }
+
+.mantine-datatable-filter-calendar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+
+  [data-filter-match]:not([data-selected]):not([data-in-range]) {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
+  }
+}
+
+.mantine-datatable-filter-row-with-picker {
+  display: flex;
+  align-items: flex-start;
+  gap: rem(4px);
+
+  .mantine-datatable-filter-input {
+    flex: 1;
+  }
+
+  .mantine-datatable-header-cell-filter-action-icon {
+    margin-top: rem(4px);
+  }
+}

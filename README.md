@@ -43,13 +43,14 @@ Visit [documatrix.github.io/mantine-datatable](https://documatrix.github.io/mant
 
 ## Quickstart
 
-Create a new [application with Mantine](https://mantine.dev/getting-started/), make sure to have the `clsx` peer dependency installed,
+Create a new [application with Mantine](https://mantine.dev/getting-started/), make sure to have the `@mantine/dates`, `dayjs` and `clsx` peer dependencies installed,
 then install the package with `npm i @neeyo/mantine-datatable`, `yarn add @neeyo/mantine-datatable`, `pnpm add @neeyo/mantine-datatable` or `bun add @neeyo/mantine-datatable`.
 
 Import the necessary CSS files:
 
 ```ts
 import '@mantine/core/styles.layer.css';
+import '@mantine/dates/styles.layer.css';
 import '@neeyo/mantine-datatable/styles.layer.css';
 import './layout.css';
 ```

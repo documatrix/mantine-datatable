@@ -1,5 +1,6 @@
 import { Button, Code, Group, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { DataTableFilterCalendar } from './DataTableFilterCalendar';
 import { DataTableFilterInput } from './DataTableFilterInput';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
 import type { DataTableResolvedFilter } from './filters/config';
@@ -16,6 +17,7 @@ export function DataTableFilterEditor({ filter, close }: DataTableFilterEditorPr
   const conditions = filters[filter.key] ?? [];
   const lockedConditions = lockedFilters?.[filter.key];
   const setConditions = (next: DataTableFilterCondition[]) => setColumnConditions(filter.key, next);
+  const showCalendar = filter.type === 'date' && !filter.renderPicker && filter.withCalendar !== false;
   const renderProps: DataTableFilterEditorRenderProps = {
     conditions,
     setConditions,
@@ -64,8 +66,15 @@ export function DataTableFilterEditor({ filter, close }: DataTableFilterEditorPr
             variant="popover"
             withinPortal={false}
             autoFocus
+            openOnFocus={!showCalendar}
           />
-          {filter.type === 'date' ? filter.renderPicker?.(renderProps) : null}
+          {filter.type === 'date' ? (
+            filter.renderPicker ? (
+              filter.renderPicker(renderProps)
+            ) : showCalendar ? (
+              <DataTableFilterCalendar filter={filter} conditions={conditions} onAdd={renderProps.addCondition} />
+            ) : null
+          ) : null}
           {helpOpened ? (
             <table className="mantine-datatable-filter-help">
               <tbody>

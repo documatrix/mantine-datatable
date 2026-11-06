@@ -11,6 +11,7 @@ type DataTableHeaderCellFilterProps = {
   isActive: boolean;
   count?: number;
   label?: string;
+  icon?: React.ReactNode;
 };
 
 export function DataTableHeaderCellFilter({
@@ -18,6 +19,7 @@ export function DataTableHeaderCellFilter({
   isActive,
   count,
   label,
+  icon,
   filterPopoverProps,
   filterPopoverDisableClickOutside,
 }: DataTableHeaderCellFilterProps) {
@@ -42,7 +44,7 @@ export function DataTableHeaderCellFilter({
           }}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          <Icon />
+          {icon ?? <Icon />}
           {count && count > 1 ? <span className="mantine-datatable-header-cell-filter-count">{count}</span> : null}
         </ActionIcon>
       </PopoverTarget>
