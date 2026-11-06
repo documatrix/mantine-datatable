@@ -142,10 +142,11 @@ function PaginationPages(props?: Partial<PaginationProps>) {
   );
 }
 
+// Wrappers return elements so calling `Controls.Text()` directly also defers the context read to render.
 const Controls: DataTablePaginationRenderContext['Controls'] = {
-  Text: PaginationText,
-  PageSizeSelector: PaginationPageSizeSelector,
-  Pagination: PaginationPages,
+  Text: (props) => <PaginationText {...props} />,
+  PageSizeSelector: (props) => <PaginationPageSizeSelector {...props} />,
+  Pagination: (props) => <PaginationPages {...props} />,
 };
 
 export function DataTablePagination({
