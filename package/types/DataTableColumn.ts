@@ -1,5 +1,6 @@
 import type { MantineStyleProp, MantineTheme, PopoverProps } from '@mantine/core';
 import type { DataTableColumnTextAlign } from './DataTableColumnTextAlign';
+import type { DataTableColumnFilter } from './DataTableFilter';
 
 export type DataTableColumn<T = Record<string, unknown>> = {
   /**
@@ -76,32 +77,21 @@ export type DataTableColumn<T = Record<string, unknown>> = {
   defaultToggle?: boolean;
 
   /**
-   * Optional node providing the user with filtering options.
-   * If present, a filter button will be added to the column's header. Upon clicking that button,
-   * a pop-over showing the provided node will be opened.
+   * Column filter.
    *
-   * Alternatively, a function returning a node can be provided. The function receives props with a `close`
-   * method which allows programmatically closing the pop-over.
+   * Pass a filter config to get a built-in filter whose state lives in the DataTable `filters` prop:
    *
    * ```tsx
-   * // …
-   * columns={[
-   *   {
-   *     accessor: 'name',
-   *     filter: ({ close }) => {
-   *       return <Stack>
-   *         <Button onClick={() => { setFilter(undefined); close(); }}>Reset</Button>
-   *       </Stack>
-   *     },
-   *   }
-   * ]}
-   * // …
+   * { accessor: 'name', filter: { type: 'text' } }
+   * { accessor: 'age', filter: { type: 'number' } }
+   * { accessor: 'department.name', filter: { type: 'select', options: departments } }
    * ```
    *
-   * Note: this property only takes care of rendering the node which provides the filtering options.
-   * It is assumed that the actual filtering is performed somewhere in user code.
+   * Alternatively pass a node, or a function receiving `{ close }`, to render your own content in the
+   * header filter popover. In that case filtering happens entirely in your code and `filtering` marks
+   * the column as filtered.
    */
-  filter?: React.ReactNode | ((params: { close: () => void }) => React.ReactNode);
+  filter?: DataTableColumnFilter<T> | React.ReactNode | ((params: { close: () => void }) => React.ReactNode);
 
   /**
    * Filter popover props; override if necessary.
@@ -114,7 +104,7 @@ export type DataTableColumn<T = Record<string, unknown>> = {
   filterPopoverDisableClickOutside?: boolean;
 
   /**
-   * If true, filter icon will be styled differently to indicate the filter is in effect.
+   * If true, the filter icon of a custom (node) `filter` is styled as active.
    */
   filtering?: boolean;
 

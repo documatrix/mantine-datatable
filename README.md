@@ -24,6 +24,7 @@ The [lightweight](https://bundlephobia.com/package/@neeyo/mantine-datatable), de
 - **[Asynchronous data loading](https://documatrix.github.io/mantine-datatable/examples/asynchronous-data-loading)** - load data from a remote API endpoint and show a loading indicator while waiting for the response
 - **[Pagination](https://documatrix.github.io/mantine-datatable/examples/pagination)** - split large data sets into pages
 - **[Column sorting](https://documatrix.github.io/mantine-datatable/examples/sorting)** - sort data by one or more columns
+- **[Column filters](https://documatrix.github.io/mantine-datatable/examples/column-filters)** - typed text, number, duration, date, yes/no and option filters with pills, a filter row, filter chips, locked filters, persistence and a [filter syntax](https://documatrix.github.io/mantine-datatable/examples/filter-syntax) for power users; works client- or [server-side](https://documatrix.github.io/mantine-datatable/examples/column-filters-server-side)
 - **[Custom cell data rendering](https://documatrix.github.io/mantine-datatable/examples/column-properties-and-styling)** - render cell data using custom components
 - **[Row expansion](https://documatrix.github.io/mantine-datatable/examples/expanding-rows)** - expand a row to show additional details
 - **[Nesting](https://documatrix.github.io/mantine-datatable/examples/nested-tables)** - nest tables to show hierarchical data

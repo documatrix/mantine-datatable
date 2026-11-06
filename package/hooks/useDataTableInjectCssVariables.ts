@@ -205,6 +205,7 @@ export function useDataTableInjectCssVariables({
           }
           case 'DIV': {
             scrollRect = getRect(entry);
+            setCssVar(root.current, '--mantine-datatable-viewport-width', `${scrollRect.width}px`);
             break;
           }
         }

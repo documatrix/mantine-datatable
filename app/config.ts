@@ -149,9 +149,24 @@ export const ROUTES: RouteInfo[] = [
     description: `Example: virtualizing ${PRODUCT_NAME} rows to smoothly handle thousands of records`,
   },
   {
+    href: '/examples/column-filters',
+    title: 'Column filters',
+    description: `Example: typed column filters with pills, a filter row and filter chips in ${PRODUCT_NAME}`,
+  },
+  {
+    href: '/examples/column-filters-server-side',
+    title: 'Server-side column filters',
+    description: `Example: sending ${PRODUCT_NAME} column filters to a server`,
+  },
+  {
+    href: '/examples/filter-syntax',
+    title: 'Filter syntax',
+    description: `Reference and playground for the ${PRODUCT_NAME} filter syntax`,
+  },
+  {
     href: '/examples/searching-and-filtering',
-    title: 'Searching and filtering',
-    description: `Example: searching and filtering data with ${PRODUCT_NAME}`,
+    title: 'Custom search and filter UI',
+    description: `Example: building your own search and filter UI around ${PRODUCT_NAME}`,
   },
   {
     href: '/examples/records-selection',

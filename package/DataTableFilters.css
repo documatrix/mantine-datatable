@@ -1,0 +1,223 @@
+.mantine-datatable-filter-row th {
+  padding-top: rem(4px);
+  padding-bottom: rem(4px);
+  font-weight: normal;
+  vertical-align: top;
+}
+
+.mantine-datatable-filter-input {
+  width: 100%;
+  min-width: rem(80px);
+}
+
+.mantine-datatable-filter-input-pills {
+  min-width: 0;
+}
+
+.mantine-datatable-filter-input-row input {
+  min-width: rem(32px);
+}
+
+.mantine-datatable-filter-pill {
+  cursor: pointer;
+  max-width: 100%;
+
+  svg {
+    vertical-align: rem(-1px);
+  }
+
+  &[data-negate] {
+    background: var(--mantine-color-red-light);
+    color: var(--mantine-color-red-light-color);
+  }
+
+  &[data-locked] {
+    cursor: default;
+    opacity: 0.75;
+  }
+}
+
+.mantine-datatable-filter-dropdown {
+  min-width: rem(240px);
+}
+
+.mantine-datatable-filter-options {
+  max-height: rem(280px);
+  overflow-y: auto;
+}
+
+.mantine-datatable-filter-option {
+  display: flex;
+  align-items: center;
+  gap: rem(6px);
+}
+
+.mantine-datatable-filter-option-check {
+  display: inline-flex;
+  flex: 0 0 rem(14px);
+  color: var(--mantine-primary-color-filled);
+}
+
+.mantine-datatable-filter-option-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mantine-datatable-filter-option-hint {
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  white-space: nowrap;
+
+  [data-combobox-selected] & {
+    color: inherit;
+    opacity: 0.75;
+  }
+}
+
+.mantine-datatable-filter-option-show-all {
+  color: var(--mantine-primary-color-filled);
+  font-size: var(--mantine-font-size-xs);
+}
+
+.mantine-datatable-filter-error {
+  color: var(--mantine-color-error);
+  font-size: var(--mantine-font-size-xs);
+  text-align: left;
+}
+
+.mantine-datatable-filter-hint {
+  color: var(--mantine-color-dimmed);
+  font-size: rem(11px);
+}
+
+.mantine-datatable-filter-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+}
+
+.mantine-datatable-filter-help {
+  border-collapse: collapse;
+  font-size: var(--mantine-font-size-xs);
+
+  td {
+    padding: rem(3px) rem(4px);
+    vertical-align: top;
+  }
+
+  td:first-of-type {
+    white-space: nowrap;
+  }
+
+  code + code {
+    margin-left: rem(4px);
+  }
+}
+
+.mantine-datatable-filter-row-custom {
+  display: flex;
+  align-items: center;
+  gap: rem(4px);
+}
+
+.mantine-datatable-filter-row-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mantine-font-size-xs);
+}
+
+.mantine-datatable-filter-chips-row th.mantine-datatable-filter-chips-cell {
+  padding: 0;
+  font-weight: normal;
+}
+
+.mantine-datatable-filter-chips {
+  position: sticky;
+  left: 0;
+  box-sizing: border-box;
+  width: min(100%, var(--mantine-datatable-viewport-width, 100%));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: rem(6px);
+  padding: rem(6px) var(--mantine-spacing-xs);
+
+  @mixin rtl {
+    left: auto;
+    right: 0;
+  }
+}
+
+.mantine-datatable-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: rem(1px) solid var(--mantine-datatable-border-color);
+  border-radius: var(--mantine-radius-xl);
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.4;
+
+  &[data-locked] {
+    border-style: dashed;
+  }
+}
+
+.mantine-datatable-filter-chip-button {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: rem(4px);
+  padding: rem(2px) rem(8px);
+  font-size: inherit;
+  border-radius: inherit;
+
+  .mantine-datatable-filter-chip:has(.mantine-datatable-filter-chip-remove) & {
+    padding-right: rem(2px);
+  }
+}
+
+.mantine-datatable-filter-chip-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mantine-datatable-filter-chip-condition {
+  display: inline-flex;
+  align-items: center;
+  gap: rem(2px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  & + &::before {
+    content: '·';
+    margin-right: rem(4px);
+    color: var(--mantine-color-dimmed);
+  }
+
+  &[data-negate] {
+    color: var(--mantine-color-red-light-color);
+  }
+
+  &[data-locked] {
+    color: var(--mantine-color-dimmed);
+  }
+}
+
+.mantine-datatable-filter-chip-remove {
+  margin-right: rem(2px);
+}
+
+.mantine-datatable-highlight {
+  background: var(--mantine-color-yellow-light);
+  color: inherit;
+  border-radius: rem(2px);
+  padding: 0;
+}

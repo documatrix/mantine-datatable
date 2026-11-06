@@ -3,6 +3,7 @@
 @import './DataTable.css';
 @import './DataTableEmptyRow.css';
 @import './DataTableEmptyState.css';
+@import './DataTableFilters.css';
 @import './DataTableFooter.css';
 @import './DataTableFooterSelectorPlaceholderCell.css';
 @import './DataTableHeader.css';
