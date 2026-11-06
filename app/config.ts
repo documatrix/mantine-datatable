@@ -154,11 +154,6 @@ export const ROUTES: RouteInfo[] = [
     description: `Example: typed column filters with pills, a filter row and filter chips in ${PRODUCT_NAME}`,
   },
   {
-    href: '/examples/column-filters-server-side',
-    title: 'Server-side column filters',
-    description: `Example: sending ${PRODUCT_NAME} column filters to a server`,
-  },
-  {
     href: '/examples/filter-syntax',
     title: 'Filter syntax',
     description: `Reference and playground for the ${PRODUCT_NAME} filter syntax`,
