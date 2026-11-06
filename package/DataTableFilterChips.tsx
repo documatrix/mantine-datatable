@@ -11,7 +11,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { DataTableFilterEditor, FILTER_POPOVER_WIDTH } from './DataTableFilterEditor';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
-import { type DataTableResolvedFilter, getFallbackFilter, resolveColumnFilters } from './filters/config';
+import { type DataTableResolvedFilter, getFallbackFilter, mergeOptions, resolveColumnFilters } from './filters/config';
 import { formatFilterCondition } from './filters/format';
 import { IconLock } from './icons/IconLock';
 import type { DataTableColumn, DataTableFilterCondition } from './types';
@@ -66,8 +66,7 @@ type DataTableFilterChipProps = {
 function DataTableFilterChip({ filter, editable, conditions, lockedConditions }: DataTableFilterChipProps) {
   const { setColumnConditions, texts, locale, knownOptions } = useDataTableFiltersContext();
   const [opened, { close, toggle }] = useDisclosure(false);
-  const options =
-    filter.type === 'select' ? [...(filter.options ?? []), ...(knownOptions[filter.key] ?? [])] : undefined;
+  const options = filter.type === 'select' ? mergeOptions(filter.options, knownOptions[filter.key]) : undefined;
   const describe = (condition: DataTableFilterCondition) =>
     formatFilterCondition(condition, filter, { texts, locale, options });
   const locked = conditions.length === 0;

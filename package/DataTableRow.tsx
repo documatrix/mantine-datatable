@@ -3,7 +3,7 @@ import { type CheckboxProps, type MantineColor, type MantineStyleProp, TableTr }
 import clsx from 'clsx';
 import { memo } from 'react';
 import { getRowCssVariables } from './cssVariables';
-import { DataTableRowCell } from './DataTableRowCell';
+import { type DataTableCellHighlight, DataTableRowCell } from './DataTableRowCell';
 import { DataTableRowExpansion } from './DataTableRowExpansion';
 import { DataTableRowSelectorCell } from './DataTableRowSelectorCell';
 import type { PinnedColumnInfo, RowExpansionInfo } from './hooks';
@@ -57,7 +57,7 @@ type DataTableRowProps<T> = {
   idAccessor: string;
   virtualizedMeasureRef?: (element: HTMLTableRowElement | null) => void;
   virtualizedExpansionRowRef?: (element: HTMLTableRowElement | null) => (() => void) | undefined;
-  highlights: Map<string, string[]> | undefined;
+  highlights: Map<string, DataTableCellHighlight> | undefined;
 } & Pick<DataTableProps<T>, 'rowFactory'>;
 
 function DataTableRowInner<T>({

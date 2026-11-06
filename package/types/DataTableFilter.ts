@@ -104,7 +104,7 @@ type DataTableFilterBase<T> = {
 
   /**
    * Operator applied to a value typed without an operator prefix.
-   * @default `contains` for text filters, `equals` otherwise
+   * @default `contains` for text filters, `equals` otherwise; the first single-value operator in `operators` if those aren't allowed
    */
   defaultOperator?: DataTableFilterOperator;
 
@@ -353,6 +353,7 @@ export type DataTableFilterProps = {
 
   /**
    * If true, text matching active text filters is highlighted in cells without a custom `render`.
+   * Columns whose filter sets `getValue` are not highlighted, since the cell doesn't show the filtered value.
    */
   highlightFilterMatches?: boolean;
 

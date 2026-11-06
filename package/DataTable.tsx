@@ -13,6 +13,7 @@ import { DataTableHeader } from './DataTableHeader';
 import { DataTableLoader } from './DataTableLoader';
 import { DataTablePagination } from './DataTablePagination';
 import { DataTableRow } from './DataTableRow';
+import type { DataTableCellHighlight } from './DataTableRowCell';
 import { DataTableScrollArea } from './DataTableScrollArea';
 import { DataTableSpacerRow } from './DataTableSpacerRow';
 import { resolveColumnFilter } from './filters/config';
@@ -335,17 +336,17 @@ export function DataTable<T>({
     rememberOptions,
   };
 
-  let highlights: Map<string, string[]> | undefined;
+  let highlights: Map<string, DataTableCellHighlight> | undefined;
   if (highlightFilterMatches) {
     highlights = new Map();
     for (const column of effectiveColumns) {
       const filter = resolveColumnFilter(column);
-      if (filter?.type !== 'text' && filter?.type !== 'select') continue;
+      if ((filter?.type !== 'text' && filter?.type !== 'select') || filter.getValue) continue;
       const terms = getFilterHighlights([
         ...(lockedFilters?.[filter.key] ?? []),
         ...(currentFilters[filter.key] ?? []),
       ]);
-      if (terms.length) highlights.set(String(column.accessor), terms);
+      if (terms.length) highlights.set(String(column.accessor), { terms, caseSensitive: filter.caseSensitive });
     }
   }
 

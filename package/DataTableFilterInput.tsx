@@ -17,7 +17,7 @@ import {
 import clsx from 'clsx';
 import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
-import { type DataTableResolvedFilter, getDefaultDatePresets } from './filters/config';
+import { type DataTableResolvedFilter, getDefaultDatePresets, mergeOptions } from './filters/config';
 import { formatFilterCondition } from './filters/format';
 import { conditionToText, foldText, isInsideQuotes, parseFilterInput } from './filters/syntax';
 import { useStableCallback } from './hooks';
@@ -40,19 +40,6 @@ const RANGE_VARIANTS: DataTableFilterOperator[] = ['equals', 'gt', 'gte', 'lt', 
 
 const sameCondition = (a: DataTableFilterCondition, b: DataTableFilterCondition) =>
   a.operator === b.operator && !!a.negate === !!b.negate && JSON.stringify(a.value) === JSON.stringify(b.value);
-
-function mergeOptions(...lists: (DataTableFilterOption[] | undefined)[]) {
-  const seen = new Set<string>();
-  const merged: DataTableFilterOption[] = [];
-  for (const option of lists.flat()) {
-    if (!option) continue;
-    const id = JSON.stringify(option.value);
-    if (seen.has(id)) continue;
-    seen.add(id);
-    merged.push(option);
-  }
-  return merged;
-}
 
 export type DataTableFilterInputApi = {
   setText: (text: string) => void;
