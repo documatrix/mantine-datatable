@@ -1,23 +1,26 @@
-import { ActionIcon, Popover, PopoverDropdown, PopoverTarget } from '@mantine/core';
+import { ActionIcon, Popover, PopoverDropdown, type PopoverProps, PopoverTarget } from '@mantine/core';
 import { useClickOutside, useDisclosure } from '@mantine/hooks';
 import type { RefObject } from 'react';
 import { IconFilter } from './icons/IconFilter';
 import { IconFilterFilled } from './icons/IconFilterFilled';
-import type { DataTableColumn } from './types';
 
-type DataTableHeaderCellFilterProps<T> = {
-  children: DataTableColumn<T>['filter'];
-  filterPopoverProps: DataTableColumn<T>['filterPopoverProps'];
-  filterPopoverDisableClickOutside?: DataTableColumn<T>['filterPopoverDisableClickOutside'];
+type DataTableHeaderCellFilterProps = {
+  children: React.ReactNode | ((params: { close: () => void }) => React.ReactNode);
+  filterPopoverProps: PopoverProps | undefined;
+  filterPopoverDisableClickOutside?: boolean;
   isActive: boolean;
+  count?: number;
+  label?: string;
 };
 
-export function DataTableHeaderCellFilter<T>({
+export function DataTableHeaderCellFilter({
   children,
   isActive,
+  count,
+  label,
   filterPopoverProps,
   filterPopoverDisableClickOutside,
-}: DataTableHeaderCellFilterProps<T>) {
+}: DataTableHeaderCellFilterProps) {
   const [isOpen, { close, toggle }] = useDisclosure(false);
   const Icon = isActive ? IconFilterFilled : IconFilter;
   let ref: RefObject<HTMLDivElement | null> | undefined = useClickOutside(close);
@@ -32,6 +35,7 @@ export function DataTableHeaderCellFilter<T>({
           data-active={isActive || undefined}
           size="sm"
           variant="default"
+          aria-label={label}
           onClick={(e) => {
             e.preventDefault();
             toggle();
@@ -39,6 +43,7 @@ export function DataTableHeaderCellFilter<T>({
           onKeyDown={(e) => e.stopPropagation()}
         >
           <Icon />
+          {count && count > 1 ? <span className="mantine-datatable-header-cell-filter-count">{count}</span> : null}
         </ActionIcon>
       </PopoverTarget>
       <PopoverDropdown ref={ref} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>

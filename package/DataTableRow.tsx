@@ -57,6 +57,7 @@ type DataTableRowProps<T> = {
   idAccessor: string;
   virtualizedMeasureRef?: (element: HTMLTableRowElement | null) => void;
   virtualizedExpansionRowRef?: (element: HTMLTableRowElement | null) => (() => void) | undefined;
+  highlights: Map<string, string[]> | undefined;
 } & Pick<DataTableProps<T>, 'rowFactory'>;
 
 function DataTableRowInner<T>({
@@ -93,6 +94,7 @@ function DataTableRowInner<T>({
   rowFactory,
   virtualizedMeasureRef,
   virtualizedExpansionRowRef,
+  highlights,
 }: Readonly<DataTableRowProps<T>>) {
   const handleSelectionChange: React.MouseEventHandler | undefined = onSelectionChange
     ? (event) => onSelectionChange(record, index, event)
@@ -164,6 +166,7 @@ function DataTableRowInner<T>({
             render={render}
             defaultRender={defaultColumnRender}
             customCellAttributes={customCellAttributes}
+            highlight={highlights?.get(String(accessor))}
           />
         );
       })}

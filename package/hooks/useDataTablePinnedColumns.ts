@@ -44,7 +44,7 @@ export function useDataTablePinnedColumns<T>({
 
     const isTheadSource = !!theadRef.current;
     const measurementRow = isTheadSource
-      ? measurementSection.querySelector<HTMLTableRowElement>('tr:last-of-type')
+      ? measurementSection.querySelector<HTMLTableRowElement>('tr.mantine-datatable-header-columns-row')
       : measurementSection.querySelector<HTMLTableRowElement>('tr.mantine-datatable-row');
     if (!measurementRow) return;
 
@@ -159,7 +159,7 @@ export function useDataTablePinnedColumns<T>({
     const observeRow = () => {
       if (observedRow?.isConnected) return;
       const row = isTheadSource
-        ? section.querySelector('tr:last-of-type')
+        ? section.querySelector('tr.mantine-datatable-header-columns-row')
         : section.querySelector('tr.mantine-datatable-row');
       observedRow = row;
       observer.disconnect();
