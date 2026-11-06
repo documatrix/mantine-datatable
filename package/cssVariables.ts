@@ -1,4 +1,4 @@
-import { type MantineColor, type MantineTheme, parseThemeColor } from '@mantine/core';
+import { getContrastColor, type MantineColor, type MantineTheme, parseThemeColor } from '@mantine/core';
 import type { DataTableProps } from './types';
 
 export function getColor(
@@ -56,9 +56,21 @@ export function getPaginationCssVariables({
 }: Pick<DataTableProps, 'paginationActiveTextColor' | 'paginationActiveBackgroundColor'> & {
   theme: MantineTheme;
 }) {
+  const textColor = (colorScheme: 'light' | 'dark') =>
+    getColor(paginationActiveTextColor, theme, colorScheme) ??
+    (paginationActiveBackgroundColor
+      ? getContrastColor({
+          color:
+            typeof paginationActiveBackgroundColor === 'object'
+              ? paginationActiveBackgroundColor[colorScheme]
+              : paginationActiveBackgroundColor,
+          theme,
+          colorScheme,
+        })
+      : undefined);
   return {
-    '--mantine-datatable-pagination-active-text-color-light': getColor(paginationActiveTextColor, theme, 'light'),
-    '--mantine-datatable-pagination-active-text-color-dark': getColor(paginationActiveTextColor, theme, 'dark'),
+    '--mantine-datatable-pagination-active-text-color-light': textColor('light'),
+    '--mantine-datatable-pagination-active-text-color-dark': textColor('dark'),
 
     '--mantine-datatable-pagination-active-background-color-light': getColor(
       paginationActiveBackgroundColor,

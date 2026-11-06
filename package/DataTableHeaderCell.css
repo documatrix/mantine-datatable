@@ -93,14 +93,14 @@
   &:hover {
     opacity: 1;
     &::after {
-      background: var(--mantine-primary-color-6);
+      background: var(--mantine-primary-color-filled);
     }
   }
 
   &:active {
     opacity: 1 !important;
     &::after {
-      background: var(--mantine-primary-color-7);
+      background: var(--mantine-primary-color-filled-hover);
     }
   }
 
