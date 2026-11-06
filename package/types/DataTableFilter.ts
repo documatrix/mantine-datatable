@@ -259,6 +259,7 @@ export type DataTableFilterTexts = {
   addConditions: (count: number) => string;
   hint: string;
   syntax: string;
+  helpHint: string;
   openCalendar: string;
   addRange: string;
   fromTime: string;
@@ -294,6 +295,9 @@ export type DataTableFilterTexts = {
     thisYear: string;
     lastYear: string;
   };
+  /**
+   * Syntax examples per filter type; clicking an example puts it into the input.
+   */
   help: Record<Exclude<DataTableFilterType, 'custom'>, [example: string, description: string][]>;
 };
 

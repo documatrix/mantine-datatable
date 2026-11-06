@@ -100,21 +100,43 @@
 }
 
 .mantine-datatable-filter-help {
-  border-collapse: collapse;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+}
+
+.mantine-datatable-filter-help-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--mantine-spacing-sm);
+  row-gap: rem(2px);
+  max-height: rem(380px);
+  overflow-y: auto;
   font-size: var(--mantine-font-size-xs);
+}
 
-  td {
-    padding: rem(3px) rem(4px);
-    vertical-align: top;
-  }
+.mantine-datatable-filter-help-row {
+  display: contents;
+}
 
-  td:first-of-type {
-    white-space: nowrap;
-  }
+.mantine-datatable-filter-help-example {
+  justify-self: start;
+  padding: rem(1px) rem(6px);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-default-hover);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-xs);
+  white-space: nowrap;
 
-  code + code {
-    margin-left: rem(4px);
+  &:hover {
+    background: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-light-color);
   }
+}
+
+.mantine-datatable-filter-help-description {
+  align-self: center;
+  color: var(--mantine-color-dimmed);
 }
 
 .mantine-datatable-filter-row-custom {
