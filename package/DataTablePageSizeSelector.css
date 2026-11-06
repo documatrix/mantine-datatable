@@ -16,7 +16,7 @@
       --mantine-datatable-pagination-active-text-color-light,
       --mantine-datatable-pagination-active-text-color-dark
     ),
-    var(--mantine-color-white)
+    var(--mantine-primary-color-contrast)
   );
   --mantine-datatable-pagination-active-background-color: var(
     light-dark(

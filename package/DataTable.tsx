@@ -1,19 +1,24 @@
-import { Box, type MantineSize, Table } from '@mantine/core';
-import { useMergedRef } from '@mantine/hooks';
+import { Box, Button, type MantineSize, Table } from '@mantine/core';
+import { useMergedRef, useUncontrolled } from '@mantine/hooks';
 import clsx from 'clsx';
 import type { RefObject } from 'react';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getTableCssVariables } from './cssVariables';
 import { DataTableColumnsProvider } from './DataTableDragToggleProvider';
 import { DataTableEmptyRow } from './DataTableEmptyRow';
 import { DataTableEmptyState } from './DataTableEmptyState';
+import { DataTableFiltersContext, type DataTableFiltersContextValue } from './DataTableFilters.context';
 import { DataTableFooter } from './DataTableFooter';
 import { DataTableHeader } from './DataTableHeader';
 import { DataTableLoader } from './DataTableLoader';
 import { DataTablePagination } from './DataTablePagination';
 import { DataTableRow } from './DataTableRow';
+import type { DataTableCellHighlight } from './DataTableRowCell';
 import { DataTableScrollArea } from './DataTableScrollArea';
 import { DataTableSpacerRow } from './DataTableSpacerRow';
+import { resolveColumnFilter } from './filters/config';
+import { getFilterHighlights } from './filters/match';
+import { mergeFilterTexts } from './filters/texts';
 import {
   useDataTableColumns,
   useDataTableInjectCssVariables,
@@ -24,9 +29,12 @@ import {
   useShallowStable,
   useStableCallback,
 } from './hooks';
-import type { DataTableProps } from './types';
+import { compactFilters, countFilterConditions } from './hooks/useDataTableFilters';
+import type { DataTableFilterCondition, DataTableFilterOption, DataTableFilters, DataTableProps } from './types';
 import { TEXT_SELECTION_DISABLED } from './utilityClasses';
 import { differenceBy, flattenColumns, getRecordId, uniqBy } from './utils';
+
+const EMPTY_FILTERS: DataTableFilters = {};
 
 const defaultAllRecordsSelectionCheckboxProps: NonNullable<
   DataTableProps<unknown>['allRecordsSelectionCheckboxProps']
@@ -106,7 +114,7 @@ export function DataTable<T>({
   loaderColor,
   loadingText = '...',
   emptyState,
-  noRecordsText = 'No records',
+  noRecordsText: noRecordsTextProp,
   noRecordsIcon,
   highlightOnHover,
   striped,
@@ -156,6 +164,16 @@ export function DataTable<T>({
   virtualizedMeasureRows,
   virtualizedOverscan = 15,
   virtualizerRef,
+  filters,
+  defaultFilters,
+  onFiltersChange,
+  lockedFilters,
+  filterDisplay = 'popover',
+  withFilterChips,
+  resetPageOnFilterChange = true,
+  highlightFilterMatches,
+  filterTexts,
+  filterLocale,
   ...otherProps
 }: DataTableProps<T>) {
   const flatColumns = useMemo(() => {
@@ -277,6 +295,60 @@ export function DataTable<T>({
 
     return () => cancelAnimationFrame(raf);
   }, [fetching, records, scrollViewportElementRef]);
+
+  const [currentFilters, setCurrentFilters] = useUncontrolled<DataTableFilters>({
+    value: filters,
+    defaultValue: defaultFilters,
+    finalValue: EMPTY_FILTERS,
+    onChange: onFiltersChange,
+  });
+  const filterTextsValue = mergeFilterTexts(filterTexts);
+  const isFiltered = countFilterConditions(currentFilters) > 0;
+  const noRecordsText = noRecordsTextProp ?? (isFiltered ? filterTextsValue.noMatches : 'No records');
+  const [knownOptions, setKnownOptions] = useState<Record<string, DataTableFilterOption[]>>({});
+
+  const updateFilters = useStableCallback((next: DataTableFilters) => {
+    setCurrentFilters(compactFilters(next));
+    if (resetPageOnFilterChange && page && page !== 1) handlePageChange(1);
+  });
+  const setColumnConditions = useStableCallback((key: string, conditions: DataTableFilterCondition[]) =>
+    updateFilters({ ...currentFilters, [key]: conditions })
+  );
+  const clearFilters = useStableCallback(() => updateFilters(EMPTY_FILTERS));
+  const rememberOptions = useStableCallback((key: string, options: DataTableFilterOption[]) =>
+    setKnownOptions((current) => {
+      const known = current[key] ?? [];
+      const ids = new Set(known.map((option) => JSON.stringify(option.value)));
+      const added = options.filter((option) => !ids.has(JSON.stringify(option.value)));
+      return added.length ? { ...current, [key]: [...known, ...added] } : current;
+    })
+  );
+
+  const filtersContextValue: DataTableFiltersContextValue = {
+    filters: currentFilters,
+    lockedFilters,
+    setColumnConditions,
+    clearFilters,
+    texts: filterTextsValue,
+    locale: filterLocale,
+    display: filterDisplay,
+    knownOptions,
+    rememberOptions,
+  };
+
+  let highlights: Map<string, DataTableCellHighlight> | undefined;
+  if (highlightFilterMatches) {
+    highlights = new Map();
+    for (const column of effectiveColumns) {
+      const filter = resolveColumnFilter(column);
+      if ((filter?.type !== 'text' && filter?.type !== 'select') || filter.getValue) continue;
+      const terms = getFilterHighlights([
+        ...(lockedFilters?.[filter.key] ?? []),
+        ...(currentFilters[filter.key] ?? []),
+      ]);
+      if (terms.length) highlights.set(String(column.accessor), { terms, caseSensitive: filter.caseSensitive });
+    }
+  }
 
   const stableSelectionCheckboxProps = useShallowStable(selectionCheckboxProps);
   const selectionColumnVisible = !!selectedRecords;
@@ -403,6 +475,7 @@ export function DataTable<T>({
         rowFactory={rowFactory}
         virtualizedMeasureRef={rowVirtualization?.measureRef}
         virtualizedExpansionRowRef={rowVirtualization?.expansionRowRef}
+        highlights={highlights}
       />
     );
   };
@@ -417,175 +490,191 @@ export function DataTable<T>({
 
   return (
     <DataTableColumnsProvider {...dragToggle} pinnedMap={pinnedMap}>
-      <Box
-        ref={rootElementRef}
-        {...marginProperties}
-        className={clsx(
-          'mantine-datatable',
-          { 'mantine-datatable-with-border': withTableBorder },
-          className,
-          classNames?.root
-        )}
-        style={[
-          (theme) => ({
-            ...getTableCssVariables({
-              theme,
-              c,
-              backgroundColor,
-              borderColor,
-              rowBorderColor,
-              stripedColor,
-              highlightOnHoverColor,
+      <DataTableFiltersContext value={filtersContextValue}>
+        <Box
+          ref={rootElementRef}
+          {...marginProperties}
+          className={clsx(
+            'mantine-datatable',
+            { 'mantine-datatable-with-border': withTableBorder },
+            className,
+            classNames?.root
+          )}
+          style={[
+            (theme) => ({
+              ...getTableCssVariables({
+                theme,
+                c,
+                backgroundColor,
+                borderColor,
+                rowBorderColor,
+                stripedColor,
+                highlightOnHoverColor,
+              }),
+              borderRadius: theme.radius[borderRadius as MantineSize] || borderRadius,
+              boxShadow: theme.shadows[shadow as MantineSize] || shadow,
+              height,
+              minHeight,
+              maxHeight,
             }),
-            borderRadius: theme.radius[borderRadius as MantineSize] || borderRadius,
-            boxShadow: theme.shadows[shadow as MantineSize] || shadow,
-            height,
-            minHeight,
-            maxHeight,
-          }),
-          style,
-          styles?.root,
-          {
-            position: 'relative',
-          },
-        ]}
-      >
-        <DataTableScrollArea
-          viewportRef={mergedViewportRef}
-          leftShadowBehind={selectionColumnVisible || hasLeftPinned}
-          rightShadowBehind={hasRightPinned}
-          onScrollPositionChange={handleScrollPositionChange}
-          scrollAreaProps={scrollAreaProps}
+            style,
+            styles?.root,
+            {
+              position: 'relative',
+            },
+          ]}
         >
-          <TableWrapper>
-            <Table
-              ref={mergedTableRef}
-              horizontalSpacing={horizontalSpacing}
-              className={clsx(
-                'mantine-datatable-table',
-                {
-                  [TEXT_SELECTION_DISABLED]: textSelectionDisabled,
-                  'mantine-datatable-vertical-align-top': verticalAlign === 'top',
-                  'mantine-datatable-vertical-align-bottom': verticalAlign === 'bottom',
-                  'mantine-datatable-selection-column-visible': selectionColumnVisible,
-                  'mantine-datatable-resizable-columns': dragToggle.hasResizableColumns,
-                  'mantine-datatable-resize-locked': dragToggle.isLocked,
-                  'mantine-datatable-resizing': dragToggle.isResizing,
-                },
-                classNames?.table
-              )}
-              style={{
-                ...styles?.table,
-                ...(dragToggle.isLocked ? { tableLayout: 'fixed' } : null),
-                ...(dragToggle.tableWidth != null ? { width: `${dragToggle.tableWidth}px` } : null),
-              }}
-              data-striped={(recordsLength && striped) || undefined}
-              data-highlight-on-hover={highlightOnHover || undefined}
-              data-virtualized={virtualized || undefined}
-              {...otherProps}
-            >
-              {noHeader ? null : (
-                <DataTableColumnsProvider {...dragToggle} pinnedMap={pinnedMap}>
-                  <DataTableHeader<T>
-                    ref={trackedHeaderRef}
-                    selectionColumnHeaderRef={trackedSelectionColumnHeaderRef}
-                    className={classNames?.header}
-                    style={styles?.header}
+          <DataTableScrollArea
+            viewportRef={mergedViewportRef}
+            leftShadowBehind={selectionColumnVisible || hasLeftPinned}
+            rightShadowBehind={hasRightPinned}
+            onScrollPositionChange={handleScrollPositionChange}
+            scrollAreaProps={scrollAreaProps}
+          >
+            <TableWrapper>
+              <Table
+                ref={mergedTableRef}
+                horizontalSpacing={horizontalSpacing}
+                className={clsx(
+                  'mantine-datatable-table',
+                  {
+                    [TEXT_SELECTION_DISABLED]: textSelectionDisabled,
+                    'mantine-datatable-vertical-align-top': verticalAlign === 'top',
+                    'mantine-datatable-vertical-align-bottom': verticalAlign === 'bottom',
+                    'mantine-datatable-selection-column-visible': selectionColumnVisible,
+                    'mantine-datatable-resizable-columns': dragToggle.hasResizableColumns,
+                    'mantine-datatable-resize-locked': dragToggle.isLocked,
+                    'mantine-datatable-resizing': dragToggle.isResizing,
+                  },
+                  classNames?.table
+                )}
+                style={{
+                  ...styles?.table,
+                  ...(dragToggle.isLocked ? { tableLayout: 'fixed' } : null),
+                  ...(dragToggle.tableWidth != null ? { width: `${dragToggle.tableWidth}px` } : null),
+                }}
+                data-striped={(recordsLength && striped) || undefined}
+                data-highlight-on-hover={highlightOnHover || undefined}
+                data-virtualized={virtualized || undefined}
+                {...otherProps}
+              >
+                {noHeader ? null : (
+                  <DataTableColumnsProvider {...dragToggle} pinnedMap={pinnedMap}>
+                    <DataTableHeader<T>
+                      ref={trackedHeaderRef}
+                      selectionColumnHeaderRef={trackedSelectionColumnHeaderRef}
+                      className={classNames?.header}
+                      style={styles?.header}
+                      columns={effectiveColumns}
+                      defaultColumnProps={defaultColumnProps}
+                      groups={groups}
+                      pinnedMap={pinnedMap}
+                      sortStatus={sortStatus}
+                      sortIcons={sortIcons}
+                      onSortStatusChange={onSortStatusChange}
+                      selectionTrigger={selectionTrigger}
+                      selectionVisible={selectionColumnVisible}
+                      selectionChecked={allSelectableRecordsSelected}
+                      selectionIndeterminate={someRecordsSelected && !allSelectableRecordsSelected}
+                      onSelectionChange={handleHeaderSelectionChange}
+                      selectionCheckboxProps={{ ...selectionCheckboxProps, ...allRecordsSelectionCheckboxProps }}
+                      selectorCellShadowVisible={selectorCellShadowVisible}
+                      selectionColumnClassName={selectionColumnClassName}
+                      selectionColumnStyle={selectionColumnStyle}
+                      withColumnBorders={otherProps.withColumnBorders}
+                      filterDisplay={filterDisplay}
+                      withFilterChips={withFilterChips}
+                      fullRowColSpan={fullRowColSpan}
+                    />
+                  </DataTableColumnsProvider>
+                )}
+                <tbody ref={mergedBodyRef}>
+                  {recordsLength ? (
+                    rowVirtualization ? (
+                      <>
+                        {rowVirtualization.paddingTop > 0 && (
+                          <DataTableSpacerRow height={rowVirtualization.paddingTop} colSpan={fullRowColSpan} />
+                        )}
+                        {rowVirtualization.virtualItems.map(({ index }) => renderRow(records![index], index))}
+                        {rowVirtualization.paddingBottom > 0 && (
+                          <DataTableSpacerRow height={rowVirtualization.paddingBottom} colSpan={fullRowColSpan} />
+                        )}
+                      </>
+                    ) : (
+                      records.map((record, index) => renderRow(record, index))
+                    )
+                  ) : (
+                    <DataTableEmptyRow />
+                  )}
+                </tbody>
+
+                {hasFooter && (
+                  <DataTableFooter<T>
+                    ref={trackedFooterRef}
+                    className={classNames?.footer}
+                    style={styles?.footer}
                     columns={effectiveColumns}
                     defaultColumnProps={defaultColumnProps}
-                    groups={groups}
                     pinnedMap={pinnedMap}
-                    sortStatus={sortStatus}
-                    sortIcons={sortIcons}
-                    onSortStatusChange={onSortStatusChange}
-                    selectionTrigger={selectionTrigger}
                     selectionVisible={selectionColumnVisible}
-                    selectionChecked={allSelectableRecordsSelected}
-                    selectionIndeterminate={someRecordsSelected && !allSelectableRecordsSelected}
-                    onSelectionChange={handleHeaderSelectionChange}
-                    selectionCheckboxProps={{ ...selectionCheckboxProps, ...allRecordsSelectionCheckboxProps }}
                     selectorCellShadowVisible={selectorCellShadowVisible}
-                    selectionColumnClassName={selectionColumnClassName}
-                    selectionColumnStyle={selectionColumnStyle}
-                    withColumnBorders={otherProps.withColumnBorders}
                   />
-                </DataTableColumnsProvider>
-              )}
-              <tbody ref={mergedBodyRef}>
-                {recordsLength ? (
-                  rowVirtualization ? (
-                    <>
-                      {rowVirtualization.paddingTop > 0 && (
-                        <DataTableSpacerRow height={rowVirtualization.paddingTop} colSpan={fullRowColSpan} />
-                      )}
-                      {rowVirtualization.virtualItems.map(({ index }) => renderRow(records![index], index))}
-                      {rowVirtualization.paddingBottom > 0 && (
-                        <DataTableSpacerRow height={rowVirtualization.paddingBottom} colSpan={fullRowColSpan} />
-                      )}
-                    </>
-                  ) : (
-                    records.map((record, index) => renderRow(record, index))
-                  )
-                ) : (
-                  <DataTableEmptyRow />
                 )}
-              </tbody>
-
-              {hasFooter && (
-                <DataTableFooter<T>
-                  ref={trackedFooterRef}
-                  className={classNames?.footer}
-                  style={styles?.footer}
-                  columns={effectiveColumns}
-                  defaultColumnProps={defaultColumnProps}
-                  pinnedMap={pinnedMap}
-                  selectionVisible={selectionColumnVisible}
-                  selectorCellShadowVisible={selectorCellShadowVisible}
-                />
-              )}
-            </Table>
-          </TableWrapper>
-        </DataTableScrollArea>
-        {!!(page && recordsLength) && (
-          <DataTablePagination
-            className={classNames?.pagination}
-            style={styles?.pagination}
-            horizontalSpacing={horizontalSpacing}
+              </Table>
+            </TableWrapper>
+          </DataTableScrollArea>
+          {!!(page && recordsLength) && (
+            <DataTablePagination
+              className={classNames?.pagination}
+              style={styles?.pagination}
+              horizontalSpacing={horizontalSpacing}
+              fetching={fetching}
+              page={page}
+              onPageChange={handlePageChange}
+              totalRecords={totalRecords}
+              recordsPerPage={recordsPerPage}
+              onRecordsPerPageChange={onRecordsPerPageChange}
+              recordsPerPageOptions={recordsPerPageOptions}
+              recordsPerPageLabel={recordsPerPageLabel}
+              paginationWithEdges={paginationWithEdges}
+              paginationWithControls={paginationWithControls}
+              paginationActiveTextColor={paginationActiveTextColor}
+              paginationActiveBackgroundColor={paginationActiveBackgroundColor}
+              paginationSize={paginationSize}
+              paginationText={paginationText}
+              paginationWrapBreakpoint={paginationWrapBreakpoint}
+              getPaginationControlProps={getPaginationControlProps}
+              getPaginationItemProps={getPaginationItemProps}
+              noRecordsText={noRecordsText}
+              loadingText={loadingText}
+              recordsLength={recordsLength}
+              renderPagination={renderPagination}
+            />
+          )}
+          <DataTableLoader
             fetching={fetching}
-            page={page}
-            onPageChange={handlePageChange}
-            totalRecords={totalRecords}
-            recordsPerPage={recordsPerPage}
-            onRecordsPerPageChange={onRecordsPerPageChange}
-            recordsPerPageOptions={recordsPerPageOptions}
-            recordsPerPageLabel={recordsPerPageLabel}
-            paginationWithEdges={paginationWithEdges}
-            paginationWithControls={paginationWithControls}
-            paginationActiveTextColor={paginationActiveTextColor}
-            paginationActiveBackgroundColor={paginationActiveBackgroundColor}
-            paginationSize={paginationSize}
-            paginationText={paginationText}
-            paginationWrapBreakpoint={paginationWrapBreakpoint}
-            getPaginationControlProps={getPaginationControlProps}
-            getPaginationItemProps={getPaginationItemProps}
-            noRecordsText={noRecordsText}
-            loadingText={loadingText}
-            recordsLength={recordsLength}
-            renderPagination={renderPagination}
+            backgroundBlur={loaderBackgroundBlur}
+            customContent={customLoader}
+            size={loaderSize}
+            type={loaderType}
+            color={loaderColor}
           />
-        )}
-        <DataTableLoader
-          fetching={fetching}
-          backgroundBlur={loaderBackgroundBlur}
-          customContent={customLoader}
-          size={loaderSize}
-          type={loaderType}
-          color={loaderColor}
-        />
-        <DataTableEmptyState icon={noRecordsIcon} text={noRecordsText} active={!fetching && !recordsLength}>
-          {emptyState}
-        </DataTableEmptyState>
-      </Box>
+          <DataTableEmptyState
+            icon={noRecordsIcon}
+            text={noRecordsText}
+            active={!fetching && !recordsLength}
+            action={
+              isFiltered ? (
+                <Button size="compact-sm" variant="light" onClick={clearFilters}>
+                  {filterTextsValue.clearFilters}
+                </Button>
+              ) : undefined
+            }
+          >
+            {emptyState}
+          </DataTableEmptyState>
+        </Box>
+      </DataTableFiltersContext>
     </DataTableColumnsProvider>
   );
 }

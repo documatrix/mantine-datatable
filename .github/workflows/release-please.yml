@@ -2,7 +2,7 @@ name: Release Please
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
 
 # Least privilege at the top level; jobs opt into more as needed
 permissions:

@@ -17,6 +17,8 @@ module.exports = async () => {
     trailingSlash: true,
     images: { unoptimized: true },
     typedRoutes: true,
+    // Agent instructions live in CLAUDE.md; stop `next dev` from appending its own block to AGENTS.md
+    agentRules: false,
     experimental: {
       optimizePackageImports: [
         '@mantine/code-highlight',
