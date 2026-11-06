@@ -98,14 +98,15 @@ export function useDataTableFilters({
     if (stored) setFiltersState(stored);
   }, [getInitialValueInEffect, storageKey, storage]);
 
-  const setFilters = (next: DataTableFilters | ((current: DataTableFilters) => DataTableFilters)) => {
-    const value = compactFilters(typeof next === 'function' ? next(filters) : next);
-    setFiltersState(value);
-    writeStoredFilters(storageKey, storage, value);
-  };
+  const setFilters = (next: DataTableFilters | ((current: DataTableFilters) => DataTableFilters)) =>
+    setFiltersState((current) => {
+      const value = compactFilters(typeof next === 'function' ? next(current) : next);
+      writeStoredFilters(storageKey, storage, value);
+      return value;
+    });
 
   const setColumnFilter = (columnKey: string, conditions: DataTableFilterCondition[]) =>
-    setFilters({ ...filters, [columnKey]: conditions });
+    setFilters((current) => ({ ...current, [columnKey]: conditions }));
 
   const clearFilters = () => setFilters(EMPTY_FILTERS);
 

@@ -137,7 +137,8 @@ export default async function ColumnFiltersExamplePage() {
         </li>
         <li>
           <Code>highlightFilterMatches</Code> marks matching text in cells without a custom <Code>render</Code>. Use{' '}
-          <Code>getFilterHighlights</Code> with <Code>DataTableHighlight</Code> in your own renders.
+          <Code>getFilterHighlights</Code> with <Code>DataTableHighlight</Code> in your own renders (set its{' '}
+          <Code>caseSensitive</Code> prop for case-sensitive filters).
         </li>
         <li>
           Changing filters goes back to the first page (turn off with <Code>resetPageOnFilterChange</Code>).

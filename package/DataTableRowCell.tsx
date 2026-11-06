@@ -15,6 +15,8 @@ import {
 } from './utilityClasses';
 import { columnWidthValue, getValueAtPath } from './utils';
 
+export type DataTableCellHighlight = { terms: string[]; caseSensitive: boolean | undefined };
+
 type DataTableRowCellProps<T> = {
   className: string | undefined;
   style: MantineStyleProp | undefined;
@@ -27,15 +29,19 @@ type DataTableRowCellProps<T> = {
   onClick: React.MouseEventHandler<HTMLTableCellElement> | undefined;
   onDoubleClick: React.MouseEventHandler<HTMLTableCellElement> | undefined;
   onContextMenu: React.MouseEventHandler<HTMLTableCellElement> | undefined;
-  highlight: string[] | undefined;
+  highlight: DataTableCellHighlight | undefined;
 } & Pick<
   DataTableColumn<T>,
   'accessor' | 'visibleMediaQuery' | 'textAlign' | 'width' | 'noWrap' | 'ellipsis' | 'render' | 'customCellAttributes'
 >;
 
-function renderValue(value: unknown, highlight: string[] | undefined) {
+function renderValue(value: unknown, highlight: DataTableCellHighlight | undefined) {
   if (highlight && (typeof value === 'string' || typeof value === 'number')) {
-    return <DataTableHighlight highlight={highlight}>{String(value)}</DataTableHighlight>;
+    return (
+      <DataTableHighlight highlight={highlight.terms} caseSensitive={highlight.caseSensitive}>
+        {String(value)}
+      </DataTableHighlight>
+    );
   }
   return value as React.ReactNode;
 }

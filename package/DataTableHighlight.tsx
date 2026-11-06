@@ -1,16 +1,24 @@
 import { foldText } from './filters/syntax';
 
 /**
- * Renders `children` with `<mark>` around every occurrence of `highlight` (case- and accent-insensitive).
- * Pair with `getFilterHighlights` to highlight filter matches in custom cell renders.
+ * Renders `children` with `<mark>` around every occurrence of `highlight`, case- and accent-insensitive
+ * unless `caseSensitive` is set. Pair with `getFilterHighlights` to highlight filter matches in custom cell renders.
  */
-export function DataTableHighlight({ children, highlight }: { children: string; highlight: string[] | undefined }) {
-  const terms = highlight?.map((term) => foldText(term)).filter(Boolean);
+export function DataTableHighlight({
+  children,
+  highlight,
+  caseSensitive,
+}: {
+  children: string;
+  highlight: string[] | undefined;
+  caseSensitive?: boolean;
+}) {
+  const terms = highlight?.map((term) => foldText(term, caseSensitive)).filter(Boolean);
   if (!terms?.length || !children) return children;
 
   // Folding can change string length (e.g. decomposed accents), so map folded indices back per character.
   const chars = [...children];
-  const folded = chars.map((char) => foldText(char));
+  const folded = chars.map((char) => foldText(char, caseSensitive));
   const haystack = folded.join('');
   const starts: number[] = [];
   let offset = 0;

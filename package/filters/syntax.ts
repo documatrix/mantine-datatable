@@ -145,6 +145,25 @@ function partsToGlob(parts: Part[]) {
   return parts.map((part) => (isWildcard(part) ? part.wildcard : escapeGlob(part.literal))).join('');
 }
 
+function globToParts(glob: string): Part[] {
+  const parts: Part[] = [];
+  let buffer = '';
+  for (let i = 0; i < glob.length; i++) {
+    const ch = glob[i];
+    if (ch === '\\' && i + 1 < glob.length) {
+      buffer += glob[++i];
+    } else if (ch === '*' || ch === '?') {
+      if (buffer) parts.push({ literal: buffer });
+      buffer = '';
+      parts.push({ wildcard: ch });
+    } else {
+      buffer += ch;
+    }
+  }
+  if (buffer) parts.push({ literal: buffer });
+  return parts;
+}
+
 function findRangeSeparator(input: string) {
   let quoted = false;
   for (let i = 0; i < input.length - 1; i++) {
@@ -300,7 +319,8 @@ export function parseFilterToken(
     return check({ operator: state.operator, value: partsToLiteral(parts) });
   }
   if (hasWildcard) return check(classifyPattern(parts));
-  return check({ operator: state.operator ?? filter.defaultOperator, value: partsToLiteral(parts) });
+  const operator = state.operator ?? filter.defaultOperator;
+  return check({ operator, value: operator === 'like' ? partsToGlob(parts) : partsToLiteral(parts) });
 }
 
 function classifyPattern(parts: Part[]): DataTableFilterCondition {
@@ -399,7 +419,12 @@ export function conditionToText(
     case 'endsWith':
       return `${negation}*${literal}`;
     case 'like':
-      return negation + String(scalar);
+      return (
+        negation +
+        globToParts(String(scalar))
+          .map((part) => (isWildcard(part) ? part.wildcard : quoteIfNeeded(part.literal)))
+          .join('')
+      );
     case 'equals':
       return negation + (isDefault || filter.type === 'boolean' ? '' : '=') + scalarToText(scalar, filter, options);
     default:

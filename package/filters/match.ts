@@ -65,67 +65,74 @@ function inRange<V>(actual: V, range: [V | null, V | null], cmp: (a: V, b: V) =>
   return (from === null || cmp(actual, from) >= 0) && (to === null || cmp(actual, to) <= 0);
 }
 
-function matchText(value: unknown, condition: DataTableFilterCondition, caseSensitive?: boolean) {
-  if (typeof value === 'object' && value !== null) return false;
-  const actual = foldText(String(value ?? ''), caseSensitive);
-  if (condition.operator === 'like') return globToRegExp(String(condition.value), caseSensitive).test(actual);
-  if (condition.operator === 'between') {
-    const [from, to] = condition.value as DataTableFilterRange;
-    const fold = (bound: DataTableFilterScalar | null) =>
-      bound === null ? null : foldText(String(bound), caseSensitive);
-    return inRange(actual, [fold(from), fold(to)], (a, b) => a.localeCompare(b));
+type ValueMatcher = (value: unknown) => boolean;
+
+const compareText = (a: string, b: string) => a.localeCompare(b);
+const compareNumber = (a: number, b: number) => a - b;
+
+function compileTextTest(condition: DataTableFilterCondition, fold: (text: string) => string, caseSensitive?: boolean) {
+  const { operator } = condition;
+  if (operator === 'like') {
+    const pattern = globToRegExp(String(condition.value), caseSensitive);
+    return (actual: string) => pattern.test(actual);
   }
-  const expected = foldText(String(condition.value ?? ''), caseSensitive);
-  switch (condition.operator) {
+  if (operator === 'between') {
+    const [from, to] = condition.value as DataTableFilterRange;
+    const range: [string | null, string | null] = [
+      from === null ? null : fold(String(from)),
+      to === null ? null : fold(String(to)),
+    ];
+    return (actual: string) => inRange(actual, range, compareText);
+  }
+  const expected = fold(String(condition.value ?? ''));
+  switch (operator) {
     case 'contains':
-      return actual.includes(expected);
+      return (actual: string) => actual.includes(expected);
     case 'startsWith':
-      return actual.startsWith(expected);
+      return (actual: string) => actual.startsWith(expected);
     case 'endsWith':
-      return actual.endsWith(expected);
+      return (actual: string) => actual.endsWith(expected);
     default:
-      return compare(actual, condition.operator, expected, (a, b) => a.localeCompare(b));
+      return (actual: string) => compare(actual, operator, expected, compareText);
   }
 }
 
-function matchNumber(value: unknown, condition: DataTableFilterCondition) {
-  const actual = toNumber(value);
-  if (Number.isNaN(actual)) return false;
-  const cmp = (a: number, b: number) => a - b;
-  if (condition.operator === 'between') {
-    const [from, to] = condition.value as DataTableFilterRange;
-    return inRange(actual, [from === null ? null : Number(from), to === null ? null : Number(to)], cmp);
-  }
-  return compare(actual, condition.operator, Number(condition.value), cmp);
+function compileText(condition: DataTableFilterCondition, caseSensitive?: boolean): ValueMatcher {
+  const fold = (text: string) => foldText(text, caseSensitive);
+  const test = compileTextTest(condition, fold, caseSensitive);
+  return (value) => {
+    if (typeof value === 'object' && value !== null) return false;
+    return test(fold(String(value ?? '')));
+  };
 }
 
-function matchDate(value: unknown, condition: DataTableFilterCondition, now: Date, weekStartsOn?: number) {
-  const actual = toDate(value);
-  if (!actual) return false;
-  const period = (token: DataTableFilterScalar) => resolveDatePeriod(String(token), now, weekStartsOn);
+function compileNumber(condition: DataTableFilterCondition): ValueMatcher {
+  let test: (actual: number) => boolean;
   if (condition.operator === 'between') {
     const [from, to] = condition.value as DataTableFilterRange;
-    const start = from === null ? null : period(from);
-    const end = to === null ? null : period(to);
-    if ((from !== null && !start) || (to !== null && !end)) return false;
-    return (!start || actual >= start.start) && (!end || actual < end.end);
+    const range: [number | null, number | null] = [
+      from === null ? null : Number(from),
+      to === null ? null : Number(to),
+    ];
+    test = (actual) => inRange(actual, range, compareNumber);
+  } else {
+    const expected = Number(condition.value);
+    test = (actual) => compare(actual, condition.operator, expected, compareNumber);
   }
-  const p = period(condition.value as DataTableFilterScalar);
-  if (!p) return false;
-  switch (condition.operator) {
-    case 'equals':
-      return actual >= p.start && actual < p.end;
-    case 'gt':
-      return actual >= p.end;
-    case 'gte':
-      return actual >= p.start;
-    case 'lt':
-      return actual < p.start;
-    case 'lte':
-      return actual < p.end;
-    default:
-      return false;
-  }
+  return (value) => {
+    const actual = toNumber(value);
+    return !Number.isNaN(actual) && test(actual);
+  };
+}
+
+function compileDate(condition: DataTableFilterCondition, now: Date, weekStartsOn?: number): ValueMatcher | null {
+  const range = getDateConditionRange(condition, now, weekStartsOn);
+  if (!range) return null;
+  const [from, to] = range;
+  return (value) => {
+    const actual = toDate(value);
+    return !!actual && (!from || actual >= from) && (!to || actual <= to);
+  };
 }
 
 function matchBoolean(value: unknown, condition: DataTableFilterCondition) {
@@ -133,35 +140,62 @@ function matchBoolean(value: unknown, condition: DataTableFilterCondition) {
   return typeof actual === 'boolean' && actual === condition.value;
 }
 
-function matchScalar(value: unknown, condition: DataTableFilterCondition, filter: DataTableResolvedFilter, now: Date) {
+function compileScalar(
+  condition: DataTableFilterCondition,
+  filter: DataTableResolvedFilter,
+  now: Date
+): ValueMatcher | null {
   switch (filter.type) {
     case 'number':
     case 'duration':
-      return matchNumber(value, condition);
+      return compileNumber(condition);
     case 'date':
-      return matchDate(value, condition, now, filter.weekStartsOn);
+      return compileDate(condition, now, filter.weekStartsOn);
     case 'boolean':
-      return matchBoolean(value, condition);
+      return (value) => matchBoolean(value, condition);
     case 'select':
       if (condition.operator === 'equals')
-        return value === condition.value || String(value) === String(condition.value);
-      return matchText(value, condition, filter.caseSensitive);
+        return (value) => value === condition.value || String(value) === String(condition.value);
+      return compileText(condition, filter.caseSensitive);
     case 'text':
-      return matchText(value, condition, filter.caseSensitive);
+      return compileText(condition, filter.caseSensitive);
     default:
-      return matchText(value, condition);
+      return compileText(condition);
   }
 }
 
-function matchValue(value: unknown, condition: DataTableFilterCondition, filter: DataTableResolvedFilter, now: Date) {
-  if (condition.operator === 'empty') return isEmptyValue(value);
-  if (Array.isArray(value)) return value.some((item) => matchScalar(item, condition, filter, now));
-  if (value === null || value === undefined) return false;
-  return matchScalar(value, condition, filter, now);
+function compileCondition(
+  condition: DataTableFilterCondition,
+  filter: DataTableResolvedFilter,
+  now: Date
+): ValueMatcher | null {
+  if (condition.operator === 'empty') return isEmptyValue;
+  const matchScalar = compileScalar(condition, filter, now);
+  if (!matchScalar) return null;
+  return (value) => {
+    if (Array.isArray(value)) return value.some((item) => matchScalar(item));
+    return value !== null && value !== undefined && matchScalar(value);
+  };
+}
+
+function compileConditions(
+  conditions: DataTableFilterCondition[],
+  filter: DataTableResolvedFilter,
+  now: Date
+): ValueMatcher {
+  const positive: ValueMatcher[] = [];
+  const negative: ValueMatcher[] = [];
+  for (const condition of conditions) {
+    const matcher = compileCondition(condition, filter, now);
+    if (matcher) (condition.negate ? negative : positive).push(matcher);
+  }
+  return (value) =>
+    !negative.some((matcher) => matcher(value)) && (!positive.length || positive.some((matcher) => matcher(value)));
 }
 
 /**
  * Checks a value against one column's conditions: plain conditions are OR-ed, negated conditions are AND-ed.
+ * Date conditions whose tokens can't be resolved are ignored.
  */
 export function matchesFilterConditions(
   value: unknown,
@@ -169,18 +203,7 @@ export function matchesFilterConditions(
   filter: DataTableResolvedFilter,
   now = new Date()
 ) {
-  let hasPositive = false;
-  let positiveMatched = false;
-  for (const condition of conditions) {
-    const matched = matchValue(value, condition, filter, now);
-    if (condition.negate) {
-      if (matched) return false;
-    } else {
-      hasPositive = true;
-      positiveMatched ||= matched;
-    }
-  }
-  return !hasPositive || positiveMatched;
+  return compileConditions(conditions, filter, now)(value);
 }
 
 export type DataTableFilterRecordsOptions<T> = {
@@ -220,7 +243,8 @@ export function filterRecords<T>(records: T[], options: DataTableFilterRecordsOp
         if (filter.match) checks.push((record) => filter.match!(record, conditions));
         continue;
       }
-      checks.push((record) => matchesFilterConditions(getRecordFilterValue(record, filter), conditions, filter, now));
+      const matches = compileConditions(conditions, filter, now);
+      checks.push((record) => matches(getRecordFilterValue(record, filter)));
     }
   }
 
@@ -242,43 +266,48 @@ export function filterRecords<T>(records: T[], options: DataTableFilterRecordsOp
 
 /**
  * Inclusive range of instants a date condition covers; `null` bounds are open.
+ * Returns `null` when a token can't be resolved or the operator doesn't apply to dates.
  */
 export function getDateConditionRange(
   condition: DataTableFilterCondition,
   now: Date,
   weekStartsOn: number | undefined
-): [Date | null, Date | null] {
-  const period = (token: DataTableFilterScalar | null) =>
-    token === null ? null : resolveDatePeriod(String(token), now, weekStartsOn);
+): [Date | null, Date | null] | null {
+  const period = (token: DataTableFilterScalar) => resolveDatePeriod(String(token), now, weekStartsOn);
   const last = (date: Date) => new Date(date.getTime() - 1);
-  let range: [Date | null, Date | null] = [null, null];
   if (condition.operator === 'between') {
     const [from, to] = condition.value as DataTableFilterRange;
-    const start = period(from);
-    const end = period(to);
-    range = [start?.start ?? null, end ? last(end.end) : null];
-  } else {
-    const p = period(condition.value as DataTableFilterScalar);
-    if (p) {
-      range = {
-        equals: [p.start, last(p.end)],
-        gt: [p.end, null],
-        gte: [p.start, null],
-        lt: [null, last(p.start)],
-        lte: [null, last(p.end)],
-      }[condition.operator as 'equals' | 'gt' | 'gte' | 'lt' | 'lte'] as [Date | null, Date | null];
-    }
+    const start = from === null ? null : period(from);
+    const end = to === null ? null : period(to);
+    if ((from !== null && !start) || (to !== null && !end)) return null;
+    return [start?.start ?? null, end ? last(end.end) : null];
   }
-  return range;
+  const p = period(condition.value as DataTableFilterScalar);
+  if (!p) return null;
+  switch (condition.operator) {
+    case 'equals':
+      return [p.start, last(p.end)];
+    case 'gt':
+      return [p.end, null];
+    case 'gte':
+      return [p.start, null];
+    case 'lt':
+      return [null, last(p.start)];
+    case 'lte':
+      return [null, last(p.end)];
+    default:
+      return null;
+  }
 }
 
 function resolveDateCondition(
   condition: DataTableFilterCondition,
   now: Date,
   weekStartsOn: number | undefined
-): DataTableFilterCondition {
+): DataTableFilterCondition | null {
   if (condition.operator === 'empty') return condition;
   const range = getDateConditionRange(condition, now, weekStartsOn);
+  if (!range) return null;
   return {
     operator: 'between',
     value: [range[0]?.toISOString() ?? null, range[1]?.toISOString() ?? null],
@@ -288,7 +317,8 @@ function resolveDateCondition(
 
 /**
  * Prepares filters for a server: date conditions become inclusive `between` ranges of ISO timestamps,
- * so relative dates like `-7d` are evaluated now. Other conditions are returned unchanged.
+ * so relative dates like `-7d` are evaluated now. Date conditions whose tokens can't be resolved are dropped,
+ * as `filterRecords` ignores them. Other conditions are returned unchanged.
  */
 export function resolveFilters<T>(
   filters: DataTableFilters,
@@ -297,12 +327,13 @@ export function resolveFilters<T>(
   const configs = resolveColumnFilters(columns);
   return Object.fromEntries(
     Object.entries(filters)
-      .filter(([, conditions]) => conditions?.length)
       .map(([key, conditions]) => {
         const filter = configs.get(key);
-        if (filter?.type !== 'date') return [key, conditions];
-        return [key, conditions.map((condition) => resolveDateCondition(condition, now, filter.weekStartsOn))];
+        if (filter?.type !== 'date' || !conditions) return [key, conditions] as const;
+        const resolved = conditions.map((condition) => resolveDateCondition(condition, now, filter.weekStartsOn));
+        return [key, resolved.filter((condition) => condition !== null)] as const;
       })
+      .filter(([, conditions]) => conditions?.length)
   );
 }
 

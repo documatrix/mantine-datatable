@@ -3,6 +3,7 @@ import { DatePicker, TimeInput } from '@mantine/dates';
 import { useState } from 'react';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
 import type { DataTableResolvedFilter } from './filters/config';
+import { resolveDatePeriod } from './filters/dates';
 import { getDateConditionRange } from './filters/match';
 import type { DataTableFilterCondition } from './types';
 
@@ -15,11 +16,6 @@ type DataTableFilterCalendarProps = {
 const pad = (n: number) => String(n).padStart(2, '0');
 const toDateString = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
-function dayBounds(date: string) {
-  const [year, month, day] = date.split('-').map(Number);
-  return [new Date(year, month - 1, day), new Date(year, month - 1, day + 1)] as const;
-}
-
 export function DataTableFilterCalendar({ filter, conditions, onAdd }: DataTableFilterCalendarProps) {
   const { texts } = useDataTableFiltersContext();
   const [range, setRange] = useState<[string | null, string | null]>([null, null]);
@@ -31,11 +27,15 @@ export function DataTableFilterCalendar({ filter, conditions, onAdd }: DataTable
   const now = new Date();
   const matchedRanges = conditions
     .filter((condition) => !condition.negate && condition.operator !== 'empty')
-    .map((condition) => getDateConditionRange(condition, now, weekStartsOn));
+    .map((condition) => getDateConditionRange(condition, now, weekStartsOn))
+    .filter((range) => range !== null);
   const isMatched = (date: string) => {
-    const [start, end] = dayBounds(date);
-    return matchedRanges.some(
-      ([from, to]) => (from !== null || to !== null) && (!from || from < end) && (!to || to >= start)
+    const day = resolveDatePeriod(date, now, weekStartsOn);
+    return (
+      !!day &&
+      matchedRanges.some(
+        ([from, to]) => (from !== null || to !== null) && (!from || from < day.end) && (!to || to >= day.start)
+      )
     );
   };
   const firstMatch = matchedRanges.find(([from, to]) => from ?? to);

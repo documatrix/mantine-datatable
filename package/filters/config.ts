@@ -4,6 +4,7 @@ import type {
   DataTableColumnFilter,
   DataTableDatePreset,
   DataTableFilterOperator,
+  DataTableFilterOption,
   DataTableFilterTexts,
   DataTableFilterType,
 } from '../types/DataTableFilter';
@@ -41,17 +42,24 @@ export function isColumnFilterConfig<T>(filter: DataTableColumn<T>['filter']): f
   );
 }
 
+function getDefaultOperator(type: DataTableFilterType, operators: DataTableFilterOperator[]) {
+  const preferred: DataTableFilterOperator = type === 'text' ? 'contains' : 'equals';
+  if (operators.includes(preferred)) return preferred;
+  return operators.find((operator) => operator !== 'between' && operator !== 'empty') ?? preferred;
+}
+
 export function resolveColumnFilter<T>(column: DataTableColumn<T>): DataTableResolvedFilter<T> | undefined {
   const { filter, accessor, title } = column;
   if (!isColumnFilterConfig(filter)) return undefined;
   const accessorString = String(accessor);
+  const operators = filter.operators ?? DEFAULT_OPERATORS[filter.type];
   return {
     ...filter,
     key: filter.key ?? accessorString,
     accessor: accessorString,
     label: filter.label ?? (typeof title === 'string' ? title : humanize(accessorString)),
-    operators: filter.operators ?? DEFAULT_OPERATORS[filter.type],
-    defaultOperator: filter.defaultOperator ?? (filter.type === 'text' ? 'contains' : 'equals'),
+    operators,
+    defaultOperator: filter.defaultOperator ?? getDefaultOperator(filter.type, operators),
   } as DataTableResolvedFilter<T>;
 }
 
@@ -76,6 +84,19 @@ export function getFallbackFilter(key: string): DataTableResolvedFilter {
     operators: DEFAULT_OPERATORS.custom,
     defaultOperator: 'contains',
   };
+}
+
+export function mergeOptions(...lists: (DataTableFilterOption[] | undefined)[]) {
+  const seen = new Set<string>();
+  const merged: DataTableFilterOption[] = [];
+  for (const option of lists.flat()) {
+    if (!option) continue;
+    const id = JSON.stringify(option.value);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    merged.push(option);
+  }
+  return merged;
 }
 
 export function getRecordFilterValue<T>(record: T, filter: DataTableResolvedFilter<T>) {

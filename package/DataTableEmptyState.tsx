@@ -21,7 +21,7 @@ export function DataTableEmptyState({ icon, text, active, action, children }: Da
           <Text component="div" size="sm" c="dimmed">
             {text}
           </Text>
-          {action ? <div className="mantine-datatable-empty-state-action">{action}</div> : null}
+          {action && active ? <div className="mantine-datatable-empty-state-action">{action}</div> : null}
         </>
       )}
     </Center>
