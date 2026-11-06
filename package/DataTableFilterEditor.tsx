@@ -1,10 +1,13 @@
-import { Button, Code, Group, Text } from '@mantine/core';
+import { Button, Group, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { useRef } from 'react';
 import { DataTableFilterCalendar } from './DataTableFilterCalendar';
-import { DataTableFilterInput } from './DataTableFilterInput';
+import { DataTableFilterInput, type DataTableFilterInputApi } from './DataTableFilterInput';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
 import type { DataTableResolvedFilter } from './filters/config';
 import type { DataTableFilterCondition, DataTableFilterEditorRenderProps } from './types';
+
+export const FILTER_POPOVER_WIDTH = 360;
 
 type DataTableFilterEditorProps = {
   filter: DataTableResolvedFilter;
@@ -14,10 +17,11 @@ type DataTableFilterEditorProps = {
 export function DataTableFilterEditor({ filter, close }: DataTableFilterEditorProps) {
   const { filters, lockedFilters, setColumnConditions, texts } = useDataTableFiltersContext();
   const [helpOpened, { toggle: toggleHelp }] = useDisclosure(false);
+  const inputApi = useRef<DataTableFilterInputApi>(null);
   const conditions = filters[filter.key] ?? [];
   const lockedConditions = lockedFilters?.[filter.key];
   const setConditions = (next: DataTableFilterCondition[]) => setColumnConditions(filter.key, next);
-  const showCalendar = filter.type === 'date' && !filter.renderPicker && filter.withCalendar !== false;
+  const hasCalendar = filter.type === 'date' && !filter.renderPicker && filter.withCalendar !== false;
   const renderProps: DataTableFilterEditorRenderProps = {
     conditions,
     setConditions,
@@ -38,7 +42,12 @@ export function DataTableFilterEditor({ filter, close }: DataTableFilterEditorPr
         </Text>
         <Group gap={4} wrap="nowrap">
           {filter.type === 'custom' ? null : (
-            <Button variant={helpOpened ? 'light' : 'subtle'} size="compact-xs" onClick={toggleHelp}>
+            <Button
+              variant={helpOpened ? 'light' : 'subtle'}
+              size="compact-xs"
+              aria-pressed={helpOpened}
+              onClick={toggleHelp}
+            >
               {texts.syntax}
             </Button>
           )}
@@ -58,6 +67,7 @@ export function DataTableFilterEditor({ filter, close }: DataTableFilterEditorPr
       ) : (
         <>
           <DataTableFilterInput
+            apiRef={inputApi}
             filter={filter}
             conditions={conditions}
             lockedConditions={lockedConditions}
@@ -66,30 +76,31 @@ export function DataTableFilterEditor({ filter, close }: DataTableFilterEditorPr
             variant="popover"
             withinPortal={false}
             autoFocus
-            openOnFocus={!showCalendar}
+            openOnFocus={!hasCalendar && !helpOpened}
           />
-          {filter.type === 'date' ? (
-            filter.renderPicker ? (
-              filter.renderPicker(renderProps)
-            ) : showCalendar ? (
-              <DataTableFilterCalendar filter={filter} conditions={conditions} onAdd={renderProps.addCondition} />
-            ) : null
-          ) : null}
           {helpOpened ? (
-            <table className="mantine-datatable-filter-help">
-              <tbody>
-                {texts.help[filter.type].map(([examples, description]) => (
-                  <tr key={examples}>
-                    <td>
-                      {examples.split(/\s{2,}/).map((example) => (
-                        <Code key={example}>{example}</Code>
-                      ))}
-                    </td>
-                    <td>{description}</td>
-                  </tr>
+            <div className="mantine-datatable-filter-help">
+              <div className="mantine-datatable-filter-help-grid">
+                {texts.help[filter.type].map(([example, description]) => (
+                  <div key={example} className="mantine-datatable-filter-help-row">
+                    <UnstyledButton
+                      className="mantine-datatable-filter-help-example"
+                      onClick={() => inputApi.current?.setText(example)}
+                    >
+                      {example}
+                    </UnstyledButton>
+                    <span className="mantine-datatable-filter-help-description">{description}</span>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+              <Text size="xs" c="dimmed">
+                {texts.helpHint}
+              </Text>
+            </div>
+          ) : filter.type === 'date' && filter.renderPicker ? (
+            filter.renderPicker(renderProps)
+          ) : hasCalendar ? (
+            <DataTableFilterCalendar filter={filter} conditions={conditions} onAdd={renderProps.addCondition} />
           ) : null}
         </>
       )}

@@ -15,7 +15,7 @@ import {
   useCombobox,
 } from '@mantine/core';
 import clsx from 'clsx';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
 import { type DataTableResolvedFilter, getDefaultDatePresets } from './filters/config';
 import { formatFilterCondition } from './filters/format';
@@ -54,7 +54,12 @@ function mergeOptions(...lists: (DataTableFilterOption[] | undefined)[]) {
   return merged;
 }
 
+export type DataTableFilterInputApi = {
+  setText: (text: string) => void;
+};
+
 export type DataTableFilterInputProps = {
+  apiRef?: React.Ref<DataTableFilterInputApi>;
   filter: DataTableResolvedFilter;
   conditions: DataTableFilterCondition[];
   lockedConditions: DataTableFilterCondition[] | undefined;
@@ -68,6 +73,7 @@ export type DataTableFilterInputProps = {
 };
 
 export function DataTableFilterInput({
+  apiRef,
   filter,
   conditions,
   lockedConditions,
@@ -296,6 +302,15 @@ export function DataTableFilterInput({
       stopEditing();
     }
   };
+
+  useImperativeHandle(apiRef, () => ({
+    setText: (text: string) => {
+      setEditingIndex(null);
+      setSearch(text);
+      inputRef.current?.focus();
+      combobox.openDropdown();
+    },
+  }));
 
   const editCondition = (index: number) => {
     setEditingIndex(index);

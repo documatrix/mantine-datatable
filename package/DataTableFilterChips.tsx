@@ -9,7 +9,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { DataTableFilterEditor } from './DataTableFilterEditor';
+import { DataTableFilterEditor, FILTER_POPOVER_WIDTH } from './DataTableFilterEditor';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
 import { type DataTableResolvedFilter, getFallbackFilter, resolveColumnFilters } from './filters/config';
 import { formatFilterCondition } from './filters/format';
@@ -99,7 +99,7 @@ function DataTableFilterChip({ filter, editable, conditions, lockedConditions }:
           trapFocus
           withArrow
           shadow="md"
-          width={320}
+          width={FILTER_POPOVER_WIDTH}
           position="bottom-start"
           closeOnEscape={false}
         >

@@ -2,7 +2,7 @@ import { ActionIcon, Box, Center, Flex, Group, type MantineStyleProp, type Manti
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
 import { useDataTableColumnsContext } from './DataTableColumns.context';
-import { DataTableFilterEditor } from './DataTableFilterEditor';
+import { DataTableFilterEditor, FILTER_POPOVER_WIDTH } from './DataTableFilterEditor';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
 import { DataTableHeaderCellFilter } from './DataTableHeaderCellFilter';
 import { DataTablePinnableDropdown } from './DataTablePinnableDropdown';
@@ -270,7 +270,12 @@ export function DataTableHeaderCell<T>({
         {filterConfig ? (
           filtersContext.display === 'popover' ? (
             <DataTableHeaderCellFilter
-              filterPopoverProps={{ closeOnEscape: false, width: 320, position: 'bottom-end', ...filterPopoverProps }}
+              filterPopoverProps={{
+                closeOnEscape: false,
+                width: FILTER_POPOVER_WIDTH,
+                position: 'bottom-end',
+                ...filterPopoverProps,
+              }}
               isActive={filterCount > 0}
               count={filterCount}
               label={filtersContext.texts.editFilter(filterConfig.label)}

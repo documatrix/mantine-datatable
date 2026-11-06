@@ -1,5 +1,5 @@
 import { type MantineStyleProp, type MantineTheme, TableTh, TableTr } from '@mantine/core';
-import { DataTableFilterEditor } from './DataTableFilterEditor';
+import { DataTableFilterEditor, FILTER_POPOVER_WIDTH } from './DataTableFilterEditor';
 import { DataTableFilterInput } from './DataTableFilterInput';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
 import { DataTableFooterSelectorPlaceholderCell } from './DataTableFooterSelectorPlaceholderCell';
@@ -105,7 +105,7 @@ function DataTableFilterRowCellContent({ filter }: { filter: DataTableResolvedFi
           isActive={all.length > 0}
           count={all.length}
           label={texts.editFilter(filter.label)}
-          filterPopoverProps={{ closeOnEscape: false, width: 320, position: 'bottom-end' }}
+          filterPopoverProps={{ closeOnEscape: false, width: FILTER_POPOVER_WIDTH, position: 'bottom-end' }}
         >
           {({ close }) => <DataTableFilterEditor filter={filter} close={close} />}
         </DataTableHeaderCellFilter>
@@ -134,7 +134,7 @@ function DataTableFilterRowCellContent({ filter }: { filter: DataTableResolvedFi
         isActive={false}
         icon={<IconCalendar />}
         label={texts.openCalendar}
-        filterPopoverProps={{ closeOnEscape: false, width: 320, position: 'bottom-end' }}
+        filterPopoverProps={{ closeOnEscape: false, width: FILTER_POPOVER_WIDTH, position: 'bottom-end' }}
       >
         {({ close }) => <DataTableFilterEditor filter={filter} close={close} />}
       </DataTableHeaderCellFilter>
