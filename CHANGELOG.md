@@ -3,6 +3,14 @@
 The following is a list of notable changes to the Mantine DataTable component.  
 Minor versions that are not listed in the changelog are bug fixes and small improvements.
 
+## [0.2.1](https://github.com/documatrix/mantine-datatable/compare/mantine-datatable-v0.2.0...mantine-datatable-v0.2.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* keep non-resizable columns out of stored widths so the table fills its container ([#11](https://github.com/documatrix/mantine-datatable/issues/11)) ([52327ad](https://github.com/documatrix/mantine-datatable/commit/52327adc20a78a6710503b3ad9bd919983ea214e))
+* keep the resize handle line inside the header cell ([#12](https://github.com/documatrix/mantine-datatable/issues/12)) ([b9aee8d](https://github.com/documatrix/mantine-datatable/commit/b9aee8dd6462092269f66e2ae6d6905b2cd98c8c))
+
 ## [0.2.0](https://github.com/documatrix/mantine-datatable/compare/mantine-datatable-v0.1.0...mantine-datatable-v0.2.0) (2026-10-15)
 
 
