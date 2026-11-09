@@ -112,6 +112,8 @@ export const useDataTableColumns = <T>({
 
     return reordered.map((column) => {
       if (column?.accessor === '__selection__') return column;
+      // Non-resizable columns keep their declared width, so they absorb the space resized ones leave.
+      if (!column?.resizable) return column;
       const accessor = column?.accessor as string;
       const widthEntry = columnsWidth.find((entry) => accessor in entry);
       if (!widthEntry) return column;
@@ -124,8 +126,7 @@ export const useDataTableColumns = <T>({
 
   // Lock the table layout to `fixed` only when *every* visible column has a
   // pixel width. Mixed states (some 'auto', some pixels) stay in auto layout
-  // so the browser keeps the auto cells visible — the user can re-resize to
-  // produce a complete pixel snapshot.
+  // so the browser keeps the auto cells visible and the table fills its container.
   // Recomputes on column visibility changes too, so resize + toggle stays
   // consistent.
   const isLocked = useMemo(() => {

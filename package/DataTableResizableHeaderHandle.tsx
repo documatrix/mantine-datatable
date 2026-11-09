@@ -61,8 +61,10 @@ export const DataTableResizableHeaderHandle = (props: DataTableResizableHeaderHa
       const startCurrentWidth = currentColumn.offsetWidth;
       const startNextWidth = nextColumn.offsetWidth;
 
-      // Snapshot every header cell into pixel widths and switch to fixed layout
-      beginResize();
+      // Snapshot every resizable header cell into pixel widths
+      const resizable = beginResize();
+      // A non-resizable neighbour keeps its declared width; the table layout absorbs the change.
+      const tradesWithNext = resizable.has(nextAccessor);
 
       setIsResizing(true);
       startXRef.current = event.clientX;
@@ -85,7 +87,7 @@ export const DataTableResizableHeaderHandle = (props: DataTableResizableHeaderHa
         if (isRTL) deltaX = -deltaX;
 
         const maxShrinkCurrent = originalWidthsRef.current.current - MIN_COLUMN_WIDTH;
-        const maxShrinkNext = originalWidthsRef.current.next - MIN_COLUMN_WIDTH;
+        const maxShrinkNext = tradesWithNext ? originalWidthsRef.current.next - MIN_COLUMN_WIDTH : Infinity;
 
         const constrainedDelta = Math.max(-maxShrinkCurrent, Math.min(deltaX, maxShrinkNext));
 
@@ -102,7 +104,7 @@ export const DataTableResizableHeaderHandle = (props: DataTableResizableHeaderHa
           return;
         }
         table?.style.setProperty(currentVar, `${liveWidths.current}px`);
-        table?.style.setProperty(nextVar, `${liveWidths.next}px`);
+        if (tradesWithNext) table?.style.setProperty(nextVar, `${liveWidths.next}px`);
       };
 
       const handleMouseUp = () => {
@@ -117,7 +119,7 @@ export const DataTableResizableHeaderHandle = (props: DataTableResizableHeaderHa
           if (liveWidths) {
             setMultipleColumnWidths([
               { accessor, width: `${liveWidths.current}px` },
-              { accessor: nextAccessor, width: `${liveWidths.next}px` },
+              ...(tradesWithNext ? [{ accessor: nextAccessor, width: `${liveWidths.next}px` }] : []),
             ]);
           }
           endResize();

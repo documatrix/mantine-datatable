@@ -12,6 +12,7 @@ import { allPromiseProps, getRouteMetadata } from '~/lib/utils';
 import ResizingComplexExample from './ResizingComplexExample';
 import ResizingDeferredExample from './ResizingDeferredExample';
 import ResizingExample from './ResizingExample';
+import ResizingMixedExample from './ResizingMixedExample';
 
 const PATH: Route = '/examples/column-resizing';
 
@@ -22,6 +23,7 @@ export default async function DraggingExamplePage() {
     'ResizingExample.tsx': readCodeFile<string>(`${PATH}/ResizingExample.tsx`),
     'ResizingComplexExample.tsx': readCodeFile<string>(`${PATH}/ResizingComplexExample.tsx`),
     'ResizingDeferredExample.tsx': readCodeFile<string>(`${PATH}/ResizingDeferredExample.tsx`),
+    'ResizingMixedExample.tsx': readCodeFile<string>(`${PATH}/ResizingMixedExample.tsx`),
   });
 
   return (
@@ -56,6 +58,20 @@ export default async function DraggingExamplePage() {
         function.
         <br />
         You may also set up the column with to <Code>initial</Code> by double-clicking on the resize handle.
+      </Txt>
+      <PageSubtitle value="Mixing resizable and non-resizable columns" />
+      <Txt>
+        Only <strong>resizable</strong> columns get a stored pixel width. Columns without <Code>resizable: true</Code>{' '}
+        keep the <Code>width</Code> they are defined with and take up the space the resized columns leave, so the table
+        keeps filling its container when the viewport grows or shrinks. Dragging a handle next to a non-resizable column
+        only changes the dragged column. Resize the <strong>Name</strong> or <strong>City</strong> column below, then
+        change the window width:
+      </Txt>
+      <ResizingMixedExample />
+      <CodeBlock code={code['ResizingMixedExample.tsx']} />
+      <Txt info>
+        When every visible column is resizable, the first drag locks all of them to pixel widths and the table is as
+        wide as their sum.
       </Txt>
       <PageSubtitle value="Deferring the resize" />
       <Txt>

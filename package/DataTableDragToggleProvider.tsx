@@ -21,7 +21,7 @@ type DataTableColumnsProviderProps = PropsWithChildren<{
   setMultipleColumnWidths: (updates: Array<{ accessor: string; width: string | number }>) => void;
   resetColumnsWidth: () => void;
 
-  beginResize: () => void;
+  beginResize: () => ReadonlySet<string>;
   endResize: () => void;
 
   pinnedMap: Map<string, PinnedColumnInfo>;
