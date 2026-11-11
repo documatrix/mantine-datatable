@@ -235,7 +235,9 @@ export function DataTableHeader<T>({
           selectorCellShadowVisible={selectorCellShadowVisible}
         />
       ) : null}
-      {withFilterChips ? <DataTableFilterChips<T> columns={columns} colSpan={fullRowColSpan} /> : null}
+      {withFilterChips ? (
+        <DataTableFilterChips<T> columns={columns} defaultColumnProps={defaultColumnProps} colSpan={fullRowColSpan} />
+      ) : null}
     </TableThead>
   );
 

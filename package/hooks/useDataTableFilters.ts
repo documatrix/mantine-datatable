@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { DataTableFilterCondition, DataTableFilters } from '../types/DataTableFilter';
 
-const EMPTY_FILTERS: DataTableFilters = {};
+export const EMPTY_FILTERS: DataTableFilters = {};
 
 export function isDataTableFilters(value: unknown): value is DataTableFilters {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;

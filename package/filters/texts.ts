@@ -96,6 +96,7 @@ export const DEFAULT_FILTER_TEXTS: DataTableFilterTexts = {
       ['5..', 'at least 5'],
       ['..10', 'at most 10'],
       ['!5..10', 'outside 5 to 10'],
+      ["1'000", "digit groups: ' _ or space, as a comma means or"],
       ['=', 'is empty'],
       ['!=', 'is not empty'],
     ],

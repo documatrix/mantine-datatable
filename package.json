@@ -53,6 +53,16 @@
         "default": "./dist/index.js"
       }
     },
+    "./dates": {
+      "import": {
+        "types": "./dist/dates.d.mts",
+        "default": "./dist/dates.mjs"
+      },
+      "require": {
+        "types": "./dist/dates.d.ts",
+        "default": "./dist/dates.js"
+      }
+    },
     "./styles.css": "./dist/styles.css",
     "./styles.layer.css": "./dist/styles.layer.css"
   },
@@ -116,6 +126,11 @@
     "clsx": ">=2",
     "react": ">=19",
     "react-dom": ">=19"
+  },
+  "peerDependenciesMeta": {
+    "@mantine/dates": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.14.26"

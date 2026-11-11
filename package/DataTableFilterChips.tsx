@@ -14,16 +14,19 @@ import { useDataTableFiltersContext } from './DataTableFilters.context';
 import { type DataTableResolvedFilter, getFallbackFilter, mergeOptions, resolveColumnFilters } from './filters/config';
 import { formatFilterCondition } from './filters/format';
 import { IconLock } from './icons/IconLock';
-import type { DataTableColumn, DataTableFilterCondition } from './types';
+import type { DataTableColumn, DataTableDefaultColumnProps, DataTableFilterCondition } from './types';
 
 type DataTableFilterChipsProps<T> = {
   columns: DataTableColumn<T>[];
+  defaultColumnProps: DataTableDefaultColumnProps<T> | undefined;
   colSpan: number;
 };
 
-export function DataTableFilterChips<T>({ columns, colSpan }: DataTableFilterChipsProps<T>) {
+export function DataTableFilterChips<T>({ columns, defaultColumnProps, colSpan }: DataTableFilterChipsProps<T>) {
   const { filters, lockedFilters, clearFilters, texts } = useDataTableFiltersContext();
-  const configs = resolveColumnFilters(columns);
+  const configs = resolveColumnFilters(
+    defaultColumnProps ? columns.map((column) => ({ ...defaultColumnProps, ...column }) as DataTableColumn<T>) : columns
+  );
   const keys = [...configs.keys()];
   for (const key of [...Object.keys(lockedFilters ?? {}), ...Object.keys(filters)]) {
     if (!keys.includes(key)) keys.push(key);

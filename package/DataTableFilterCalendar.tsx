@@ -1,23 +1,24 @@
 import { Button, Group } from '@mantine/core';
 import { DatePicker, TimeInput } from '@mantine/dates';
 import { useState } from 'react';
-import { useDataTableFiltersContext } from './DataTableFilters.context';
-import type { DataTableResolvedFilter } from './filters/config';
-import { resolveDatePeriod } from './filters/dates';
+import { useDataTableFilterEditorContext, useDataTableFiltersContext } from './DataTableFilters.context';
+import { resolveDatePeriod, toDayToken } from './filters/dates';
 import { getDateConditionRange } from './filters/match';
-import type { DataTableFilterCondition } from './types';
+import type { DataTableFilterEditorRenderProps } from './types';
 
-type DataTableFilterCalendarProps = {
-  filter: DataTableResolvedFilter;
-  conditions: DataTableFilterCondition[];
-  onAdd: (condition: DataTableFilterCondition) => void;
-};
+export type DataTableFilterCalendarProps = Pick<DataTableFilterEditorRenderProps, 'conditions' | 'addCondition'>;
 
-const pad = (n: number) => String(n).padStart(2, '0');
-const toDateString = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-
-export function DataTableFilterCalendar({ filter, conditions, onAdd }: DataTableFilterCalendarProps) {
+/**
+ * Calendar for date filters, built on `@mantine/dates`. Picks a day (click it twice) or a range, with start and
+ * end times when the filter sets `withTime`. Use it as a date filter's picker:
+ *
+ * ```tsx
+ * filter: { type: 'date', renderPicker: (props) => <DataTableFilterCalendar {...props} /> }
+ * ```
+ */
+export function DataTableFilterCalendar({ conditions, addCondition: onAdd }: DataTableFilterCalendarProps) {
   const { texts } = useDataTableFiltersContext();
+  const filter = useDataTableFilterEditorContext();
   const [range, setRange] = useState<[string | null, string | null]>([null, null]);
   const [fromTime, setFromTime] = useState('');
   const [toTime, setToTime] = useState('');
@@ -39,7 +40,7 @@ export function DataTableFilterCalendar({ filter, conditions, onAdd }: DataTable
     );
   };
   const firstMatch = matchedRanges.find(([from, to]) => from ?? to);
-  const initialMonth = toDateString(firstMatch?.[0] ?? firstMatch?.[1] ?? now);
+  const initialMonth = toDayToken(firstMatch?.[0] ?? firstMatch?.[1] ?? now);
 
   const add = (from: string, to: string) => {
     const token = (date: string, time: string) => (time ? `${date}T${time}` : date);

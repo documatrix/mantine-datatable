@@ -19,7 +19,13 @@ import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useDataTableFiltersContext } from './DataTableFilters.context';
 import { type DataTableResolvedFilter, getDefaultDatePresets, mergeOptions } from './filters/config';
 import { formatFilterCondition } from './filters/format';
-import { conditionToText, foldText, isInsideQuotes, parseFilterInput } from './filters/syntax';
+import {
+  conditionToText,
+  foldText,
+  getFilterSearchTerm,
+  isLiteralCommaPosition,
+  parseFilterInput,
+} from './filters/syntax';
 import { useStableCallback } from './hooks';
 import { IconCheck } from './icons/IconCheck';
 import { IconLock } from './icons/IconLock';
@@ -89,9 +95,12 @@ export function DataTableFilterInput({
   const select = filter.type === 'select' ? filter : undefined;
   const loadOptions = useStableCallback(select?.loadOptions);
   const hasLoader = !!select?.loadOptions;
+  const optionsLimit = select?.optionsLimit ?? 100;
   const options = select ? mergeOptions(select.options, knownOptions[filter.key], loaded) : undefined;
   const context = { texts, locale, options };
   const query = search.trim();
+  const searchTerm = getFilterSearchTerm(query);
+  const optionQuery = searchTerm.term.trim();
   const dropdownOpened = combobox.dropdownOpened;
 
   useEffect(() => {
@@ -100,7 +109,7 @@ export function DataTableFilterInput({
     setLoading(true);
     const timer = setTimeout(
       () => {
-        loadOptions(query, controller.signal).then(
+        loadOptions(optionQuery, controller.signal).then(
           (result) => {
             if (controller.signal.aborted) return;
             setLoaded(result);
@@ -112,13 +121,13 @@ export function DataTableFilterInput({
           }
         );
       },
-      query ? 250 : 0
+      optionQuery ? 250 : 0
     );
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [hasLoader, dropdownOpened, query, loadOptions, rememberOptions, filter.key]);
+  }, [hasLoader, dropdownOpened, optionQuery, loadOptions, rememberOptions, filter.key]);
 
   const editing = editingIndex !== null && editingIndex < conditions.length ? editingIndex : null;
   const others = editing === null ? conditions : conditions.filter((_, i) => i !== editing);
@@ -138,8 +147,7 @@ export function DataTableFilterInput({
     suggestions.push({ id, label, hint, conditions: [condition], toggle: true, checked: isActive(condition) });
 
   const addOptions = (list: DataTableFilterOption[]) => {
-    const limit = select?.optionsLimit ?? 100;
-    const visible = showAll ? list : list.slice(0, limit);
+    const visible = showAll ? list : list.slice(0, optionsLimit);
     hiddenCount = list.length - visible.length;
     visible.forEach((option, i) => {
       const condition: DataTableFilterCondition =
@@ -175,8 +183,9 @@ export function DataTableFilterInput({
       addToggle('not-empty', texts.notEmpty, { operator: 'empty', negate: true });
     }
   } else if (parsed) {
-    if (options) {
-      const folded = foldText(query);
+    // Options only apply plain text; with a negation or operator, the typed condition is suggested instead.
+    if (options && searchTerm.plain) {
+      const folded = foldText(optionQuery);
       addOptions(options.filter((option) => foldText(option.label ?? String(option.value)).includes(folded)));
     }
     if (!parsed.error && parsed.conditions.length > 1) {
@@ -186,7 +195,7 @@ export function DataTableFilterInput({
         hint: parsed.conditions.map(describe).join(', '),
         conditions: parsed.conditions,
       });
-    } else if (!parsed.error) {
+    } else if (!parsed.error && parsed.conditions.length === 1) {
       const [condition] = parsed.conditions;
       const plain =
         !condition.negate &&
@@ -260,7 +269,7 @@ export function DataTableFilterInput({
     if (event.key === 'Enter' && query && (!dropdownOpened || combobox.getSelectedOptionIndex() === -1)) {
       event.preventDefault();
       commit(firstSuggestion);
-    } else if (event.key === ',' && query && !isInsideQuotes(search)) {
+    } else if (event.key === ',' && query && !isLiteralCommaPosition(search)) {
       event.preventDefault();
       if (dropdownOpened && combobox.getSelectedOptionIndex() !== -1) combobox.clickSelectedOption();
       else commit(firstSuggestion);
@@ -283,7 +292,10 @@ export function DataTableFilterInput({
   const handleBlur = () => {
     combobox.closeDropdown();
     const typed = parsed && !parsed.error ? parsed.conditions : [];
-    if (typed.length && (!select || typed.every(matchesOption))) {
+    // A select keeps partial text that still matches options, as committing it would add a custom value;
+    // a value no option matches is committed like on Enter.
+    const offersOptions = suggestions.some((suggestion) => suggestion.toggle);
+    if (typed.length && (!select || !offersOptions || typed.every(matchesOption))) {
       commit({ id: 'typed', label: '', conditions: typed });
     } else if (editing !== null) {
       stopEditing();
@@ -406,7 +418,7 @@ export function DataTableFilterInput({
           )}
           {hiddenCount > 0 && !error ? (
             <ComboboxOption value={SHOW_ALL} className="mantine-datatable-filter-option-show-all">
-              {texts.showAll(hiddenCount + (select?.optionsLimit ?? 100))}
+              {texts.showAll(hiddenCount + optionsLimit)}
             </ComboboxOption>
           ) : null}
           {loading && !error ? <ComboboxEmpty>{texts.loading}</ComboboxEmpty> : null}

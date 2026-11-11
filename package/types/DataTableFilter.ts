@@ -1,6 +1,7 @@
 /**
  * Operators a filter condition can use.
  * Text operators compare case- and accent-insensitively unless the column filter sets `caseSensitive`.
+ * `gt`, `gte`, `lt` and `lte` compare text alphabetically; `between` applies to number, duration and date filters.
  * Date operators compare against the whole period of the value (`2026-03` is the entire month).
  */
 export type DataTableFilterOperator =
@@ -144,14 +145,9 @@ export type DataTableDurationUnit = 'ms' | 's' | 'min' | 'h' | 'd';
 export type DataTableDateFilter<T> = DataTableFilterBase<T> & {
   type: 'date';
   /**
-   * If true, the calendar in the filter popover also asks for start and end times.
+   * If true, `DataTableFilterCalendar` also asks for start and end times.
    */
   withTime?: boolean;
-  /**
-   * Shows a calendar in the filter popover for picking a day or a range.
-   * @default true
-   */
-  withCalendar?: boolean;
   /**
    * Presets offered while the input is empty; `false` hides them.
    */
@@ -162,7 +158,8 @@ export type DataTableDateFilter<T> = DataTableFilterBase<T> & {
    */
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   /**
-   * Renders your own picker below the input in the filter popover, instead of the built-in calendar.
+   * Renders a picker below the input in the filter popover, e.g. `DataTableFilterCalendar` from
+   * `@neeyo/mantine-datatable/dates`, or your own. In the filter row, it opens from an icon next to the input.
    */
   renderPicker?: (props: DataTableFilterEditorRenderProps) => React.ReactNode;
 };

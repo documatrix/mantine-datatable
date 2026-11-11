@@ -15,6 +15,12 @@ const KEYWORDS: Record<string, string> = { now: 'now', today: '0d', yesterday: '
 
 const pad = (n: number, length = 2) => String(n).padStart(length, '0');
 
+/**
+ * Formats a local date as a `YYYY-MM-DD` day token.
+ */
+export const toDayToken = (date: Date) =>
+  `${pad(date.getFullYear(), 4)}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+
 function buildAbsolute(
   year: number,
   month?: number,

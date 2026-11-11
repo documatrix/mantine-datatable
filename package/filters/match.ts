@@ -8,7 +8,7 @@ import type {
 import { getValueAtPath } from '../utils';
 import { type DataTableResolvedFilter, getRecordFilterValue, resolveColumnFilters } from './config';
 import { resolveDatePeriod, toDate } from './dates';
-import { foldText } from './syntax';
+import { foldText, globToParts, isWildcard } from './syntax';
 
 function globToRegExp(pattern: string, caseSensitive?: boolean) {
   const folded = foldText(pattern, caseSensitive);
@@ -75,14 +75,6 @@ function compileTextTest(condition: DataTableFilterCondition, fold: (text: strin
   if (operator === 'like') {
     const pattern = globToRegExp(String(condition.value), caseSensitive);
     return (actual: string) => pattern.test(actual);
-  }
-  if (operator === 'between') {
-    const [from, to] = condition.value as DataTableFilterRange;
-    const range: [string | null, string | null] = [
-      from === null ? null : fold(String(from)),
-      to === null ? null : fold(String(to)),
-    ];
-    return (actual: string) => inRange(actual, range, compareText);
   }
   const expected = fold(String(condition.value ?? ''));
   switch (operator) {
@@ -375,9 +367,8 @@ export function getFilterHighlights(conditions: DataTableFilterCondition[] | und
   for (const condition of conditions ?? []) {
     if (condition.negate || typeof condition.value !== 'string') continue;
     if (condition.operator === 'like') {
-      for (const fragment of condition.value.split(/(?<!\\)[*?]/)) {
-        const literal = fragment.replace(/\\(.)/g, '$1');
-        if (literal.length > 1) terms.add(literal);
+      for (const part of globToParts(condition.value)) {
+        if (!isWildcard(part) && part.literal.length > 1) terms.add(part.literal);
       }
     } else if (['contains', 'startsWith', 'endsWith', 'equals'].includes(condition.operator) && condition.value) {
       terms.add(condition.value);

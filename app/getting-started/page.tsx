@@ -28,32 +28,33 @@ export default async function GettingStartedPage() {
     <>
       <PageTitle of={PATH} />
       <Txt>
-        {PRODUCT_NAME} depends on <Code>@mantine/core</Code>, <Code>@mantine/hooks</Code>, <Code>@mantine/dates</Code>{' '}
-        (for the date filter calendar, which needs <Code>dayjs</Code>) and <Code>clsx</Code>.
+        {PRODUCT_NAME} depends on <Code>@mantine/core</Code>, <Code>@mantine/hooks</Code> and <Code>clsx</Code>. The
+        optional date filter calendar (<Code>{process.env.PACKAGE_NAME}/dates</Code>) also needs{' '}
+        <Code>@mantine/dates</Code> and <Code>dayjs</Code>.
       </Txt>
       <Txt>
         Create a new <ExternalLink to={`${MANTINE_LINK}/getting-started/`}>application with Mantine</ExternalLink>,
-        install <Code>{process.env.PACKAGE_NAME}</Code> and make sure you have <Code>@mantine/dates</Code>,{' '}
-        <Code>dayjs</Code> and <Code>clsx</Code> installed as well:
+        install <Code>{process.env.PACKAGE_NAME}</Code> and make sure you have <Code>clsx</Code> installed as well (add{' '}
+        <Code>@mantine/dates dayjs</Code> for the calendar):
       </Txt>
       <CodeBlock
         tabs={[
           {
             language: 'shell',
             fileName: 'yarn',
-            code: `yarn add ${process.env.PACKAGE_NAME} @mantine/dates dayjs clsx`,
+            code: `yarn add ${process.env.PACKAGE_NAME} clsx`,
           },
-          { language: 'shell', fileName: 'npm', code: `npm i ${process.env.PACKAGE_NAME} @mantine/dates dayjs clsx` },
-          { language: 'shell', fileName: 'pnpm', code: `pnpm i ${process.env.PACKAGE_NAME} @mantine/dates dayjs clsx` },
-          { language: 'shell', fileName: 'bun', code: `bun add ${process.env.PACKAGE_NAME} @mantine/dates dayjs clsx` },
+          { language: 'shell', fileName: 'npm', code: `npm i ${process.env.PACKAGE_NAME} clsx` },
+          { language: 'shell', fileName: 'pnpm', code: `pnpm i ${process.env.PACKAGE_NAME} clsx` },
+          { language: 'shell', fileName: 'bun', code: `bun add ${process.env.PACKAGE_NAME} clsx` },
         ]}
       />
       <Txt>
         Don’t forget to import the necessary CSS files and apply the styles <strong>in the correct order</strong>.
       </Txt>
       <Txt warning title="Very important">
-        The <Code>@mantine/core</Code> and <Code>@mantine/dates</Code> styles must be applied before {PRODUCT_NAME}{' '}
-        styles.
+        The <Code>@mantine/core</Code> (and, with the calendar, <Code>@mantine/dates</Code>) styles must be applied
+        before {PRODUCT_NAME} styles.
         <br />
         Make sure to go through and <strong>understand</strong> the information in the{' '}
         <InternalLink to="/styling">styling guide</InternalLink> before jumping into examples or starting your own

@@ -99,11 +99,12 @@ export default async function ColumnFiltersExamplePage() {
           stored in the filter’s <Code>unit</Code>.
         </li>
         <li>
-          <Code>date</Code> (Birth date, Last login): a calendar in the filter popover picks a day (click it twice) or a
-          range, and <Code>withTime</Code> adds start and end times. Absolute dates match their whole period (
-          <Code>2026-03</Code> is all of March), relative dates stay relative when persisted (<Code>-1mo</Code> is
-          always last month), and presets cover the common ranges. In the filter row, the calendar opens from the icon
-          next to the input.
+          <Code>date</Code> (Birth date, Last login): <Code>DataTableFilterCalendar</Code> from{' '}
+          <Code>{process.env.PACKAGE_NAME}/dates</Code>, passed as <Code>renderPicker</Code>, picks a day (click it
+          twice) or a range, and <Code>withTime</Code> adds start and end times. It is a separate entry point, so only
+          apps using it need <Code>@mantine/dates</Code>. Absolute dates match their whole period (<Code>2026-03</Code>{' '}
+          is all of March), relative dates stay relative when persisted (<Code>-1mo</Code> is always last month), and
+          presets cover the common ranges. In the filter row, the calendar opens from the icon next to the input.
         </li>
         <li>
           <Code>boolean</Code> (Senior): yes / no.
@@ -193,8 +194,8 @@ export default async function ColumnFiltersExamplePage() {
         which records pass in <Code>filterRecords</Code>.
       </Txt>
       <Txt>
-        Date filters can swap the built-in calendar for your own picker with <Code>renderPicker</Code>, or hide it with{' '}
-        <Code>withCalendar: false</Code>:
+        Instead of <Code>DataTableFilterCalendar</Code>, <Code>renderPicker</Code> can render your own picker; without{' '}
+        <Code>renderPicker</Code>, date filters only have the input:
       </Txt>
       <CodeBlock code={PICKER_CODE} language="tsx" />
       <PageSubtitle value="Translations" />

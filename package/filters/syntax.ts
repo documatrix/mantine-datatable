@@ -25,7 +25,7 @@ export type DataTableFilterParseResult = {
   error?: string;
 };
 
-type Part = { literal: string } | { wildcard: '*' | '?' };
+export type Part = { literal: string } | { wildcard: '*' | '?' };
 
 const OPERATOR_SYMBOLS: Record<DataTableFilterOperator, string> = {
   contains: 'contains',
@@ -105,6 +105,21 @@ export function isInsideQuotes(input: string) {
   return quoted;
 }
 
+/**
+ * Whether a comma typed after `input` is part of the value (inside quotes or escaped by a trailing backslash)
+ * rather than a separator.
+ */
+export function isLiteralCommaPosition(input: string) {
+  let quoted = false;
+  for (let i = 0; i < input.length; i++) {
+    if (input[i] === '\\') {
+      if (i === input.length - 1) return true;
+      i++;
+    } else if (input[i] === '"') quoted = !quoted;
+  }
+  return quoted;
+}
+
 function lex(input: string): Part[] | null {
   const parts: Part[] = [];
   let buffer = '';
@@ -131,7 +146,7 @@ function lex(input: string): Part[] | null {
   return parts;
 }
 
-const isWildcard = (part: Part): part is { wildcard: '*' | '?' } => 'wildcard' in part;
+export const isWildcard = (part: Part): part is { wildcard: '*' | '?' } => 'wildcard' in part;
 
 function partsToLiteral(parts: Part[]) {
   return parts.map((part) => (isWildcard(part) ? part.wildcard : part.literal)).join('');
@@ -145,7 +160,10 @@ function partsToGlob(parts: Part[]) {
   return parts.map((part) => (isWildcard(part) ? part.wildcard : escapeGlob(part.literal))).join('');
 }
 
-function globToParts(glob: string): Part[] {
+/**
+ * Splits a `like` glob into literal text and wildcards, resolving backslash escapes.
+ */
+export function globToParts(glob: string): Part[] {
   const parts: Part[] = [];
   let buffer = '';
   for (let i = 0; i < glob.length; i++) {
@@ -182,9 +200,11 @@ export function parseFilterNumber(text: string): number | null {
 }
 
 export function parseFilterDuration(text: string, unit: DataTableDurationUnit = 'ms'): number | null {
-  const compact = text.replace(/\s+/g, '').toLowerCase();
-  const bare = parseFilterNumber(compact);
+  const signed = text.replace(/\s+/g, '').toLowerCase();
+  const bare = parseFilterNumber(signed);
   if (bare !== null) return bare;
+  const sign = signed.startsWith('-') ? -1 : 1;
+  const compact = signed.replace(/^[+-]/, '');
   const re = /(\d+(?:\.\d+)?)(ms|sec|min|s|m|h|d|w)/y;
   let total = 0;
   let consumed = 0;
@@ -193,7 +213,7 @@ export function parseFilterDuration(text: string, unit: DataTableDurationUnit = 
     consumed = re.lastIndex;
   }
   if (consumed === 0 || consumed !== compact.length) return null;
-  return total / DURATION_UNITS[unit];
+  return (sign * total) / DURATION_UNITS[unit];
 }
 
 export function formatDurationCompact(value: number, unit: DataTableDurationUnit = 'ms', separator = '') {
@@ -357,6 +377,35 @@ function parseRangeScalar(
 }
 
 /**
+ * Returns the text to search options for: the literal text of the last token, without negation,
+ * operator prefix, quotes and wildcards. `plain` is false when the input has several tokens or the token has
+ * a negation or operator, since picking an option then wouldn't apply what was typed.
+ */
+export function getFilterSearchTerm(input: string): { term: string; plain: boolean } {
+  const tokens = splitFilterInput(input);
+  let rest = tokens[tokens.length - 1] ?? '';
+  // Picking an option would drop the other typed tokens.
+  let plain = tokens.length <= 1;
+  if (rest.startsWith('!')) {
+    plain = false;
+    rest = rest.slice(1).trimStart();
+  }
+  const prefix = PREFIXES.find(([candidate]) => rest.startsWith(candidate));
+  if (prefix) {
+    if (prefix[0] !== '=') plain = false;
+    rest = rest.slice(prefix[0].length).trimStart();
+  }
+  const parts = lex(rest) ?? lex(`${rest}"`) ?? [];
+  return {
+    term: parts
+      .filter((part) => !isWildcard(part))
+      .map((part) => (part as { literal: string }).literal)
+      .join(''),
+    plain,
+  };
+}
+
+/**
  * Parses comma-separated input into conditions. Stops at the first invalid token.
  */
 export function parseFilterInput(
@@ -365,8 +414,10 @@ export function parseFilterInput(
   context: DataTableFilterParseContext
 ): DataTableFilterParseResult {
   if (isInsideQuotes(input)) return { conditions: [], error: context.texts.errors.unterminatedQuote };
+  const tokens = splitFilterInput(input);
+  if (!tokens.length) return { conditions: [], error: context.texts.errors.missingValue };
   const conditions: DataTableFilterCondition[] = [];
-  for (const token of splitFilterInput(input)) {
+  for (const token of tokens) {
     const result = parseFilterToken(token, filter, context);
     if ('error' in result) return { conditions, error: result.error };
     conditions.push(result.condition);
@@ -387,9 +438,10 @@ function scalarToText(
 ) {
   if (filter.type === 'duration' && typeof value === 'number') return formatDurationCompact(value, filter.unit);
   if (typeof value === 'boolean') return value ? 'yes' : 'no';
+  const label = filter.type === 'select' ? options?.find((o) => o.value === value)?.label : undefined;
+  if (label !== undefined) return quoteIfNeeded(label);
   if (typeof value === 'number' || filter.type === 'date') return String(value);
-  const option = filter.type === 'select' ? options?.find((o) => o.value === value) : undefined;
-  return quoteIfNeeded(option?.label ?? String(value));
+  return quoteIfNeeded(String(value));
 }
 
 /**

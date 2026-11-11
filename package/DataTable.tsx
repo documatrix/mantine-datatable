@@ -2,7 +2,7 @@ import { Box, Button, type MantineSize, Table } from '@mantine/core';
 import { useMergedRef, useUncontrolled } from '@mantine/hooks';
 import clsx from 'clsx';
 import type { RefObject } from 'react';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getTableCssVariables } from './cssVariables';
 import { DataTableColumnsProvider } from './DataTableDragToggleProvider';
 import { DataTableEmptyRow } from './DataTableEmptyRow';
@@ -16,7 +16,7 @@ import { DataTableRow } from './DataTableRow';
 import type { DataTableCellHighlight } from './DataTableRowCell';
 import { DataTableScrollArea } from './DataTableScrollArea';
 import { DataTableSpacerRow } from './DataTableSpacerRow';
-import { resolveColumnFilter } from './filters/config';
+import { mergeOptions, resolveColumnFilter } from './filters/config';
 import { getFilterHighlights } from './filters/match';
 import { mergeFilterTexts } from './filters/texts';
 import {
@@ -29,12 +29,10 @@ import {
   useShallowStable,
   useStableCallback,
 } from './hooks';
-import { compactFilters, countFilterConditions } from './hooks/useDataTableFilters';
+import { compactFilters, countFilterConditions, EMPTY_FILTERS } from './hooks/useDataTableFilters';
 import type { DataTableFilterCondition, DataTableFilterOption, DataTableFilters, DataTableProps } from './types';
 import { TEXT_SELECTION_DISABLED } from './utilityClasses';
 import { differenceBy, flattenColumns, getRecordId, uniqBy } from './utils';
-
-const EMPTY_FILTERS: DataTableFilters = {};
 
 const defaultAllRecordsSelectionCheckboxProps: NonNullable<
   DataTableProps<unknown>['allRecordsSelectionCheckboxProps']
@@ -307,20 +305,33 @@ export function DataTable<T>({
   const noRecordsText = noRecordsTextProp ?? (isFiltered ? filterTextsValue.noMatches : 'No records');
   const [knownOptions, setKnownOptions] = useState<Record<string, DataTableFilterOption[]>>({});
 
+  // Updates made in one event must build on each other, so they start from the latest value set here,
+  // not from the filters of the last render. Reset to the rendered filters on every commit.
+  const latestFiltersRef = useRef(currentFilters);
+  useInsertionEffect(() => {
+    latestFiltersRef.current = currentFilters;
+  });
   const updateFilters = useStableCallback((next: DataTableFilters) => {
-    setCurrentFilters(compactFilters(next));
+    const compacted = compactFilters(next);
+    latestFiltersRef.current = compacted;
+    setCurrentFilters(compacted);
     if (resetPageOnFilterChange && page && page !== 1) handlePageChange(1);
   });
-  const setColumnConditions = useStableCallback((key: string, conditions: DataTableFilterCondition[]) =>
-    updateFilters({ ...currentFilters, [key]: conditions })
+  const setColumnConditions = useStableCallback(
+    (
+      key: string,
+      conditions: DataTableFilterCondition[] | ((current: DataTableFilterCondition[]) => DataTableFilterCondition[])
+    ) => {
+      const latest = latestFiltersRef.current;
+      const next = typeof conditions === 'function' ? conditions(latest[key] ?? []) : conditions;
+      updateFilters({ ...latest, [key]: next });
+    }
   );
   const clearFilters = useStableCallback(() => updateFilters(EMPTY_FILTERS));
   const rememberOptions = useStableCallback((key: string, options: DataTableFilterOption[]) =>
     setKnownOptions((current) => {
-      const known = current[key] ?? [];
-      const ids = new Set(known.map((option) => JSON.stringify(option.value)));
-      const added = options.filter((option) => !ids.has(JSON.stringify(option.value)));
-      return added.length ? { ...current, [key]: [...known, ...added] } : current;
+      const merged = mergeOptions(current[key], options);
+      return merged.length === (current[key]?.length ?? 0) ? current : { ...current, [key]: merged };
     })
   );
 
@@ -340,7 +351,9 @@ export function DataTable<T>({
   if (highlightFilterMatches) {
     highlights = new Map();
     for (const column of effectiveColumns) {
-      const filter = resolveColumnFilter(column);
+      const filter = resolveColumnFilter(
+        defaultColumnProps ? ({ ...defaultColumnProps, ...column } as typeof column) : column
+      );
       if ((filter?.type !== 'text' && filter?.type !== 'select') || filter.getValue) continue;
       const terms = getFilterHighlights([
         ...(lockedFilters?.[filter.key] ?? []),

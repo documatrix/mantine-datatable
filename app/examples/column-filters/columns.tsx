@@ -1,4 +1,5 @@
 import type { DataTableColumn, DataTableFilterOption } from '__PACKAGE__';
+import { DataTableFilterCalendar } from '__PACKAGE__/dates';
 import { Chip, Group } from '@mantine/core';
 import dayjs from 'dayjs';
 import { type EmployeeRecord, loadDepartmentOptions, records } from './api';
@@ -68,7 +69,7 @@ export const columns: DataTableColumn<EmployeeRecord>[] = [
     accessor: 'birthDate',
     width: 170,
     render: ({ birthDate }) => dayjs(birthDate).format('MMM D, YYYY'),
-    filter: { type: 'date' },
+    filter: { type: 'date', renderPicker: (props) => <DataTableFilterCalendar {...props} /> },
   },
   // number
   {
@@ -127,6 +128,6 @@ export const columns: DataTableColumn<EmployeeRecord>[] = [
     accessor: 'lastLogin',
     width: 190,
     render: ({ lastLogin }) => dayjs(lastLogin).format('MMM D, HH:mm'),
-    filter: { type: 'date', withTime: true },
+    filter: { type: 'date', withTime: true, renderPicker: (props) => <DataTableFilterCalendar {...props} /> },
   },
 ];

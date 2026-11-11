@@ -125,7 +125,7 @@ function DataTableFilterRowCellContent({ filter }: { filter: DataTableResolvedFi
     />
   );
 
-  if (filter.type !== 'date' || (filter.withCalendar === false && !filter.renderPicker)) return input;
+  if (filter.type !== 'date' || !filter.renderPicker) return input;
 
   return (
     <div className="mantine-datatable-filter-row-with-picker">

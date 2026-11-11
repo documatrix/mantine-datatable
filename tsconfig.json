@@ -20,7 +20,8 @@
     ],
     "paths": {
       "~/*": ["./*"],
-      "__PACKAGE__": ["./package/"]
+      "__PACKAGE__": ["./package/"],
+      "__PACKAGE__/*": ["./package/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
