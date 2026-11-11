@@ -2,9 +2,12 @@ import { ActionIcon, Box, Center, Flex, Group, type MantineStyleProp, type Manti
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
 import { useDataTableColumnsContext } from './DataTableColumns.context';
+import { DataTableFilterEditor, FILTER_POPOVER_WIDTH } from './DataTableFilterEditor';
+import { useDataTableFiltersContext } from './DataTableFilters.context';
 import { DataTableHeaderCellFilter } from './DataTableHeaderCellFilter';
 import { DataTablePinnableDropdown } from './DataTablePinnableDropdown';
 import { DataTableResizableHeaderHandle } from './DataTableResizableHeaderHandle';
+import { isColumnFilterConfig, resolveColumnFilter } from './filters/config';
 import type { PinnedColumnInfo } from './hooks';
 import { useMediaQueryStringOrFunction } from './hooks';
 import { IconArrowsVertical } from './icons/IconArrowsVertical';
@@ -82,6 +85,13 @@ export function DataTableHeaderCell<T>({
   // Get current pinning state for this column
   const pinningState = columnsPinning?.find((p) => p.accessor === accessor);
   const currentPinned = pinningState?.pinned;
+
+  const filtersContext = useDataTableFiltersContext();
+  const filterConfig = resolveColumnFilter({ accessor, title, filter } as DataTableColumn<T>);
+  const filterCount = filterConfig
+    ? (filtersContext.filters[filterConfig.key]?.length ?? 0) +
+      (filtersContext.lockedFilters?.[filterConfig.key]?.length ?? 0)
+    : 0;
 
   if (!useMediaQueryStringOrFunction(visibleMediaQuery)) return null;
   const text = title ?? humanize(accessor as string);
@@ -257,7 +267,24 @@ export function DataTableHeaderCell<T>({
             </Center>
           )
         ) : null}
-        {filter ? (
+        {filterConfig ? (
+          filtersContext.display === 'popover' ? (
+            <DataTableHeaderCellFilter
+              filterPopoverProps={{
+                closeOnEscape: false,
+                width: FILTER_POPOVER_WIDTH,
+                position: 'bottom-end',
+                ...filterPopoverProps,
+              }}
+              isActive={filterCount > 0}
+              count={filterCount}
+              label={filtersContext.texts.editFilter(filterConfig.label)}
+              filterPopoverDisableClickOutside={filterPopoverDisableClickOutside}
+            >
+              {({ close }) => <DataTableFilterEditor filter={filterConfig} close={close} />}
+            </DataTableHeaderCellFilter>
+          ) : null
+        ) : filter && !isColumnFilterConfig(filter) ? (
           <DataTableHeaderCellFilter
             filterPopoverProps={filterPopoverProps}
             isActive={!!filtering}

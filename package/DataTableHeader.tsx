@@ -14,8 +14,11 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import { DataTableColumnGroupHeaderCell } from './DataTableColumnGroupHeaderCell';
 import { useDataTableColumnsContext } from './DataTableColumns.context';
+import { DataTableFilterChips } from './DataTableFilterChips';
+import { DataTableFilterRow } from './DataTableFilterRow';
 import { DataTableHeaderCell } from './DataTableHeaderCell';
 import { DataTableHeaderSelectorCell } from './DataTableHeaderSelectorCell';
+import { isColumnFilterConfig } from './filters/config';
 import type { DataTableColumnToggle, PinnedColumnInfo } from './hooks';
 import type { DataTableColumn, DataTableColumnGroup, DataTableSelectionTrigger, DataTableSortProps } from './types';
 import { getGroupsAtDepth, getMaxGroupDepth, humanize } from './utils';
@@ -41,6 +44,9 @@ type DataTableHeaderProps<T> = {
   selectionColumnClassName: string | undefined;
   selectionColumnStyle: MantineStyleProp;
   withColumnBorders?: boolean;
+  filterDisplay: 'popover' | 'row';
+  withFilterChips: boolean | undefined;
+  fullRowColSpan: number;
   ref: React.Ref<HTMLTableSectionElement>;
 };
 
@@ -89,8 +95,14 @@ export function DataTableHeader<T>({
   selectionColumnClassName,
   selectionColumnStyle,
   withColumnBorders = false,
+  filterDisplay,
+  withFilterChips,
+  fullRowColSpan,
   ref,
 }: DataTableHeaderProps<T>) {
+  const hasFilterConfigs = columns.some(
+    (column) => !column.hidden && isColumnFilterConfig({ ...defaultColumnProps, ...column }.filter)
+  );
   const maxGroupDepth = groups ? getMaxGroupDepth(groups) : 0;
   const totalHeaderRows = maxGroupDepth > 0 ? maxGroupDepth + 1 : 1;
 
@@ -157,7 +169,7 @@ export function DataTableHeader<T>({
           );
         })}
 
-      <TableTr>
+      <TableTr className="mantine-datatable-header-columns-row">
         {!groups && allRecordsSelectorCell}
 
         {columns.map(({ hidden, ...columnProps }, index) => {
@@ -214,6 +226,18 @@ export function DataTableHeader<T>({
           );
         })}
       </TableTr>
+      {filterDisplay === 'row' && hasFilterConfigs ? (
+        <DataTableFilterRow<T>
+          columns={columns}
+          defaultColumnProps={defaultColumnProps}
+          pinnedMap={pinnedMap}
+          selectionVisible={selectionVisible}
+          selectorCellShadowVisible={selectorCellShadowVisible}
+        />
+      ) : null}
+      {withFilterChips ? (
+        <DataTableFilterChips<T> columns={columns} defaultColumnProps={defaultColumnProps} colSpan={fullRowColSpan} />
+      ) : null}
     </TableThead>
   );
 

@@ -1,9 +1,20 @@
-import { Box, type MantineSpacing, type MantineStyleProp, Pagination, rem, Text } from '@mantine/core';
+import {
+  Box,
+  type MantineSpacing,
+  type MantineStyleProp,
+  Pagination,
+  type PaginationProps,
+  rem,
+  Text,
+  type TextProps,
+} from '@mantine/core';
 import clsx from 'clsx';
+import { createContext, use } from 'react';
 import { getPaginationCssVariables } from './cssVariables';
 import { DataTablePageSizeSelector } from './DataTablePageSizeSelector';
 import { useMediaQueryStringOrFunction } from './hooks';
 import type { DataTablePaginationProps } from './types';
+import type { DataTablePageSizeSelectorProps } from './types/DataTablePageSizeSelectorProps';
 import type { DataTablePaginationRenderContext } from './types/DataTablePaginationRenderContext';
 import type { WithOptionalProperty, WithRequiredProperty } from './types/utils';
 
@@ -20,6 +31,122 @@ type DataTablePaginationComponentProps = WithOptionalProperty<
   recordsLength: number | undefined;
   horizontalSpacing: MantineSpacing | undefined;
   noRecordsText: string;
+};
+
+type PaginationControlsContextValue = Pick<
+  DataTablePaginationComponentProps,
+  | 'paginationSize'
+  | 'recordsPerPageOptions'
+  | 'recordsPerPage'
+  | 'onRecordsPerPageChange'
+  | 'recordsPerPageLabel'
+  | 'paginationActiveTextColor'
+  | 'paginationActiveBackgroundColor'
+  | 'paginationWithEdges'
+  | 'paginationWithControls'
+  | 'fetching'
+  | 'recordsLength'
+  | 'page'
+  | 'onPageChange'
+  | 'getPaginationControlProps'
+  | 'getPaginationItemProps'
+> & {
+  paginationTextValue: React.ReactNode;
+  totalPages: number;
+};
+
+const PaginationControlsContext = createContext<PaginationControlsContextValue | null>(null);
+
+function usePaginationControlsContext() {
+  const ctx = use(PaginationControlsContext);
+  if (!ctx) throw new Error('Pagination controls must be rendered inside renderPagination');
+  return ctx;
+}
+
+function PaginationText(props?: Partial<TextProps>) {
+  const { paginationSize, paginationTextValue } = usePaginationControlsContext();
+  return (
+    <Text component="div" className="mantine-datatable-pagination-text" size={paginationSize} {...props}>
+      {paginationTextValue}
+    </Text>
+  );
+}
+
+function PaginationPageSizeSelector(props?: Partial<DataTablePageSizeSelectorProps>) {
+  const {
+    recordsPerPageOptions,
+    paginationActiveTextColor,
+    paginationActiveBackgroundColor,
+    paginationSize,
+    recordsPerPageLabel,
+    recordsPerPage,
+    onRecordsPerPageChange,
+  } = usePaginationControlsContext();
+  return recordsPerPageOptions ? (
+    <DataTablePageSizeSelector
+      activeTextColor={paginationActiveTextColor}
+      activeBackgroundColor={paginationActiveBackgroundColor}
+      size={paginationSize}
+      label={recordsPerPageLabel}
+      values={recordsPerPageOptions}
+      value={recordsPerPage!}
+      onChange={onRecordsPerPageChange!}
+      {...props}
+    />
+  ) : null;
+}
+
+function PaginationPages(props?: Partial<PaginationProps>) {
+  const {
+    fetching,
+    recordsLength,
+    paginationActiveTextColor,
+    paginationActiveBackgroundColor,
+    paginationWithEdges,
+    paginationWithControls,
+    page,
+    onPageChange,
+    paginationSize,
+    totalPages,
+    getPaginationControlProps,
+    getPaginationItemProps,
+  } = usePaginationControlsContext();
+  return (
+    <Pagination
+      classNames={{
+        root: clsx('mantine-datatable-pagination-pages', {
+          'mantine-datatable-pagination-pages-fetching': fetching || !recordsLength,
+        }),
+        control: 'mantine-datatable-pagination-pages-control',
+      }}
+      style={
+        paginationActiveTextColor || paginationActiveBackgroundColor
+          ? (theme) =>
+              getPaginationCssVariables({
+                theme,
+                paginationActiveTextColor,
+                paginationActiveBackgroundColor,
+              })
+          : undefined
+      }
+      withEdges={paginationWithEdges}
+      withControls={paginationWithControls}
+      value={page}
+      onChange={onPageChange}
+      size={paginationSize}
+      total={totalPages}
+      getControlProps={getPaginationControlProps}
+      getItemProps={getPaginationItemProps}
+      {...props}
+    />
+  );
+}
+
+// Wrappers return elements so calling `Controls.Text()` directly also defers the context read to render.
+const Controls: DataTablePaginationRenderContext['Controls'] = {
+  Text: (props) => <PaginationText {...props} />,
+  PageSizeSelector: (props) => <PaginationPageSizeSelector {...props} />,
+  Pagination: (props) => <PaginationPages {...props} />,
 };
 
 export function DataTablePagination({
@@ -73,56 +200,6 @@ export function DataTablePagination({
 
   const isWrapped = !isAbovePaginationWrapBreakpoint;
 
-  const Controls: DataTablePaginationRenderContext['Controls'] = {
-    Text: (props) => (
-      <Text component="div" className="mantine-datatable-pagination-text" size={paginationSize} {...props}>
-        {paginationTextValue}
-      </Text>
-    ),
-    PageSizeSelector: (props) =>
-      recordsPerPageOptions ? (
-        <DataTablePageSizeSelector
-          activeTextColor={paginationActiveTextColor}
-          activeBackgroundColor={paginationActiveBackgroundColor}
-          size={paginationSize}
-          label={recordsPerPageLabel}
-          values={recordsPerPageOptions}
-          value={recordsPerPage!}
-          onChange={onRecordsPerPageChange!}
-          {...props}
-        />
-      ) : null,
-    Pagination: (props) => (
-      <Pagination
-        classNames={{
-          root: clsx('mantine-datatable-pagination-pages', {
-            'mantine-datatable-pagination-pages-fetching': fetching || !recordsLength,
-          }),
-          control: 'mantine-datatable-pagination-pages-control',
-        }}
-        style={
-          paginationActiveTextColor || paginationActiveBackgroundColor
-            ? (theme) =>
-                getPaginationCssVariables({
-                  theme,
-                  paginationActiveTextColor,
-                  paginationActiveBackgroundColor,
-                })
-            : undefined
-        }
-        withEdges={paginationWithEdges}
-        withControls={paginationWithControls}
-        value={page}
-        onChange={onPageChange}
-        size={paginationSize}
-        total={totalPages}
-        getControlProps={getPaginationControlProps}
-        getItemProps={getPaginationItemProps}
-        {...props}
-      />
-    ),
-  };
-
   const ctx: DataTablePaginationRenderContext = {
     state: {
       paginationSize,
@@ -143,6 +220,26 @@ export function DataTablePagination({
     Controls,
   };
 
+  const controls: PaginationControlsContextValue = {
+    paginationTextValue,
+    paginationSize,
+    recordsPerPageOptions,
+    recordsPerPage,
+    onRecordsPerPageChange,
+    recordsPerPageLabel,
+    paginationActiveTextColor,
+    paginationActiveBackgroundColor,
+    paginationWithEdges,
+    paginationWithControls,
+    fetching,
+    recordsLength,
+    page,
+    onPageChange,
+    totalPages,
+    getPaginationControlProps,
+    getPaginationItemProps,
+  };
+
   return (
     <Box
       px={horizontalSpacing ?? 'xs'}
@@ -150,15 +247,17 @@ export function DataTablePagination({
       className={clsx('mantine-datatable-pagination', className)}
       style={[{ flexDirection: isWrapped ? 'column' : 'row' }, style]}
     >
-      {typeof renderPagination === 'function' ? (
-        renderPagination(ctx)
-      ) : (
-        <>
-          <Controls.Text />
-          <Controls.PageSizeSelector />
-          <Controls.Pagination />
-        </>
-      )}
+      <PaginationControlsContext value={controls}>
+        {typeof renderPagination === 'function' ? (
+          renderPagination(ctx)
+        ) : (
+          <>
+            <Controls.Text />
+            <Controls.PageSizeSelector />
+            <Controls.Pagination />
+          </>
+        )}
+      </PaginationControlsContext>
     </Box>
   );
 }

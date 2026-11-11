@@ -6,3 +6,24 @@
     color: var(--mantine-color-text);
   }
 }
+
+.mantine-datatable-header-cell-filter-action-icon {
+  position: relative;
+  overflow: visible;
+}
+
+.mantine-datatable-header-cell-filter-count {
+  position: absolute;
+  top: rem(-4px);
+  right: rem(-4px);
+  min-width: rem(13px);
+  height: rem(13px);
+  padding: 0 rem(3px);
+  border-radius: rem(7px);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  font-size: rem(9px);
+  font-weight: 700;
+  line-height: rem(13px);
+  text-align: center;
+}

@@ -11,6 +11,7 @@ import type { DataTableColorProps } from './DataTableColorProps';
 import type { DataTableColumnProps } from './DataTableColumnProps';
 import type { DataTableDefaultColumnProps } from './DataTableDefaultColumnProps';
 import type { DataTableEmptyStateProps } from './DataTableEmptyStateProps';
+import type { DataTableFilterProps } from './DataTableFilter';
 import type { DataTableIdAccessor } from './DataTableIdAccessor';
 import type { DataTableLoaderProps } from './DataTableLoaderProps';
 import type { DataTableOuterBorderProps } from './DataTableOuterBorderProps';
@@ -283,6 +284,7 @@ export type DataTableProps<T = Record<string, unknown>> = {
   DataTableOuterBorderProps &
   DataTableLoaderProps &
   DataTableEmptyStateProps &
+  DataTableFilterProps &
   DataTablePaginationProps &
   DataTableSortProps<T> &
   DataTableScrollProps &

@@ -1,5 +1,6 @@
 import { type MantineStyleProp, TableTd } from '@mantine/core';
 import clsx from 'clsx';
+import { DataTableHighlight } from './DataTableHighlight';
 import type { PinnedColumnInfo } from './hooks';
 import { useMediaQueryStringOrFunction } from './hooks';
 import type { DataTableColumn } from './types';
@@ -14,6 +15,8 @@ import {
 } from './utilityClasses';
 import { columnWidthValue, getValueAtPath } from './utils';
 
+export type DataTableCellHighlight = { terms: string[]; caseSensitive: boolean | undefined };
+
 type DataTableRowCellProps<T> = {
   className: string | undefined;
   style: MantineStyleProp | undefined;
@@ -26,10 +29,22 @@ type DataTableRowCellProps<T> = {
   onClick: React.MouseEventHandler<HTMLTableCellElement> | undefined;
   onDoubleClick: React.MouseEventHandler<HTMLTableCellElement> | undefined;
   onContextMenu: React.MouseEventHandler<HTMLTableCellElement> | undefined;
+  highlight: DataTableCellHighlight | undefined;
 } & Pick<
   DataTableColumn<T>,
   'accessor' | 'visibleMediaQuery' | 'textAlign' | 'width' | 'noWrap' | 'ellipsis' | 'render' | 'customCellAttributes'
 >;
+
+function renderValue(value: unknown, highlight: DataTableCellHighlight | undefined) {
+  if (highlight && (typeof value === 'string' || typeof value === 'number')) {
+    return (
+      <DataTableHighlight highlight={highlight.terms} caseSensitive={highlight.caseSensitive}>
+        {String(value)}
+      </DataTableHighlight>
+    );
+  }
+  return value as React.ReactNode;
+}
 
 export function DataTableRowCell<T>({
   className,
@@ -49,6 +64,7 @@ export function DataTableRowCell<T>({
   render,
   defaultRender,
   customCellAttributes,
+  highlight,
 }: DataTableRowCellProps<T>) {
   if (!useMediaQueryStringOrFunction(visibleMediaQuery)) return null;
   const widthValue = columnWidthValue(String(accessor), width);
@@ -90,7 +106,7 @@ export function DataTableRowCell<T>({
         ? render(record, index)
         : defaultRender
           ? defaultRender(record, index, accessor)
-          : (getValueAtPath(record, accessor) as React.ReactNode)}
+          : renderValue(getValueAtPath(record, accessor), highlight)}
     </TableTd>
   );
 }

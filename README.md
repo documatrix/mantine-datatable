@@ -24,6 +24,7 @@ The [lightweight](https://bundlephobia.com/package/@neeyo/mantine-datatable), de
 - **[Asynchronous data loading](https://documatrix.github.io/mantine-datatable/examples/asynchronous-data-loading)** - load data from a remote API endpoint and show a loading indicator while waiting for the response
 - **[Pagination](https://documatrix.github.io/mantine-datatable/examples/pagination)** - split large data sets into pages
 - **[Column sorting](https://documatrix.github.io/mantine-datatable/examples/sorting)** - sort data by one or more columns
+- **[Column filters](https://documatrix.github.io/mantine-datatable/examples/column-filters)** - typed text, number, duration, date, yes/no and option filters with pills, a filter row, filter chips, locked filters, persistence and a [filter syntax](https://documatrix.github.io/mantine-datatable/examples/filter-syntax) for power users; works in the browser or on a server
 - **[Custom cell data rendering](https://documatrix.github.io/mantine-datatable/examples/column-properties-and-styling)** - render cell data using custom components
 - **[Row expansion](https://documatrix.github.io/mantine-datatable/examples/expanding-rows)** - expand a row to show additional details
 - **[Nesting](https://documatrix.github.io/mantine-datatable/examples/nested-tables)** - nest tables to show hierarchical data
@@ -42,13 +43,14 @@ Visit [documatrix.github.io/mantine-datatable](https://documatrix.github.io/mant
 
 ## Quickstart
 
-Create a new [application with Mantine](https://mantine.dev/getting-started/), make sure to have the `clsx` peer dependency installed,
+Create a new [application with Mantine](https://mantine.dev/getting-started/), make sure to have the `@mantine/dates`, `dayjs` and `clsx` peer dependencies installed,
 then install the package with `npm i @neeyo/mantine-datatable`, `yarn add @neeyo/mantine-datatable`, `pnpm add @neeyo/mantine-datatable` or `bun add @neeyo/mantine-datatable`.
 
 Import the necessary CSS files:
 
 ```ts
 import '@mantine/core/styles.layer.css';
+import '@mantine/dates/styles.layer.css';
 import '@neeyo/mantine-datatable/styles.layer.css';
 import './layout.css';
 ```
