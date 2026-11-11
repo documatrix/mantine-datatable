@@ -3,6 +3,13 @@
 The following is a list of notable changes to the Mantine DataTable component.  
 Minor versions that are not listed in the changelog are bug fixes and small improvements.
 
+## [0.3.0](https://github.com/documatrix/mantine-datatable/compare/mantine-datatable-v0.2.1...mantine-datatable-v0.3.0) (2026-11-11)
+
+
+### Features
+
+* add built-in column filters ([#13](https://github.com/documatrix/mantine-datatable/issues/13)) ([d6df820](https://github.com/documatrix/mantine-datatable/commit/d6df820995c7cef79ea064d7ff3fe9fca1c6c787))
+
 ## [0.2.1](https://github.com/documatrix/mantine-datatable/compare/mantine-datatable-v0.2.0...mantine-datatable-v0.2.1) (2026-11-09)
 
 
