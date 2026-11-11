@@ -2,7 +2,7 @@ import babel from '@rolldown/plugin-babel';
 import { defineConfig } from 'tsdown';
 
 export default defineConfig({
-  entry: ['package/index.ts', 'package/dates.ts'],
+  entry: { index: 'package/index.ts', dates: 'package/dates.ts', filters: 'package/filters/index.ts' },
   format: ['esm', 'cjs'],
   platform: 'neutral',
   tsconfig: 'scripts/tsconfig.build.json',

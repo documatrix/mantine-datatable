@@ -190,7 +190,8 @@ export type DataTableSelectFilter<T> = DataTableFilterBase<T> & {
    */
   allowCustomValues?: boolean;
   /**
-   * If true, text comparisons respect case and accents.
+   * If true, text comparisons respect case and accents. Values listed in `options` always match exactly;
+   * set this when options from `loadOptions` differ only by case or accents.
    */
   caseSensitive?: boolean;
 };

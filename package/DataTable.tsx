@@ -16,7 +16,7 @@ import { DataTableRow } from './DataTableRow';
 import type { DataTableCellHighlight } from './DataTableRowCell';
 import { DataTableScrollArea } from './DataTableScrollArea';
 import { DataTableSpacerRow } from './DataTableSpacerRow';
-import { mergeOptions, resolveColumnFilter } from './filters/config';
+import { resolveColumnFilter } from './filters/config';
 import { getFilterHighlights } from './filters/match';
 import { mergeFilterTexts } from './filters/texts';
 import {
@@ -330,8 +330,21 @@ export function DataTable<T>({
   const clearFilters = useStableCallback(() => updateFilters(EMPTY_FILTERS));
   const rememberOptions = useStableCallback((key: string, options: DataTableFilterOption[]) =>
     setKnownOptions((current) => {
-      const merged = mergeOptions(current[key], options);
-      return merged.length === (current[key]?.length ?? 0) ? current : { ...current, [key]: merged };
+      // Only labels are remembered (for pills and chips): counts go stale, and keeping them would
+      // update the table on every load.
+      const known = current[key] ?? [];
+      const fresh = new Map(options.map(({ value, label }) => [JSON.stringify(value), { value, label }]));
+      let changed = false;
+      const next = known.map((option) => {
+        const id = JSON.stringify(option.value);
+        const update = fresh.get(id);
+        fresh.delete(id);
+        if (!update || update.label === option.label) return option;
+        changed = true;
+        return update;
+      });
+      if (!changed && !fresh.size) return current;
+      return { ...current, [key]: [...next, ...fresh.values()] };
     })
   );
 
@@ -351,9 +364,7 @@ export function DataTable<T>({
   if (highlightFilterMatches) {
     highlights = new Map();
     for (const column of effectiveColumns) {
-      const filter = resolveColumnFilter(
-        defaultColumnProps ? ({ ...defaultColumnProps, ...column } as typeof column) : column
-      );
+      const filter = resolveColumnFilter(column, defaultColumnProps);
       if ((filter?.type !== 'text' && filter?.type !== 'select') || filter.getValue) continue;
       const terms = getFilterHighlights([
         ...(lockedFilters?.[filter.key] ?? []),

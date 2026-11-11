@@ -1,26 +1,45 @@
 import type { DataTableColumn } from '../types/DataTableColumn';
-import type {
-  DataTableFilterCondition,
-  DataTableFilterRange,
-  DataTableFilterScalar,
-  DataTableFilters,
-} from '../types/DataTableFilter';
+import type { DataTableDefaultColumnProps } from '../types/DataTableDefaultColumnProps';
+import type { DataTableFilterCondition, DataTableFilterScalar, DataTableFilters } from '../types/DataTableFilter';
 import { getValueAtPath } from '../utils';
 import { type DataTableResolvedFilter, getRecordFilterValue, resolveColumnFilters } from './config';
 import { resolveDatePeriod, toDate } from './dates';
 import { foldText, globToParts, isWildcard } from './syntax';
 
-function globToRegExp(pattern: string, caseSensitive?: boolean) {
-  const folded = foldText(pattern, caseSensitive);
-  let source = '';
-  for (let i = 0; i < folded.length; i++) {
-    const ch = folded[i];
-    if (ch === '\\' && i + 1 < folded.length) source += folded[++i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    else if (ch === '*') source += '.*';
-    else if (ch === '?') source += '.';
-    else source += ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Wildcard matching with a single backtrack point, so untrusted patterns can't cause exponential work.
+function compileGlob(pattern: string, caseSensitive?: boolean) {
+  const tokens: (string | { wildcard: '*' | '?' })[] = [];
+  for (const part of globToParts(foldText(pattern, caseSensitive))) {
+    if (isWildcard(part)) tokens.push({ wildcard: part.wildcard });
+    else tokens.push(...part.literal.split(''));
   }
-  return new RegExp(`^${source}$`, 's');
+  const isStar = (index: number) => {
+    const token = tokens[index];
+    return typeof token === 'object' && token.wildcard === '*';
+  };
+  return (text: string) => {
+    let t = 0;
+    let p = 0;
+    let star = -1;
+    let mark = 0;
+    while (t < text.length) {
+      const token = tokens[p];
+      if (token !== undefined && !isStar(p) && (typeof token === 'object' || token === text[t])) {
+        t++;
+        p++;
+      } else if (isStar(p)) {
+        star = p++;
+        mark = t;
+      } else if (star !== -1) {
+        p = star + 1;
+        t = ++mark;
+      } else {
+        return false;
+      }
+    }
+    while (isStar(p)) p++;
+    return p === tokens.length;
+  };
 }
 
 function isEmptyValue(value: unknown) {
@@ -73,8 +92,7 @@ const compareNumber = (a: number, b: number) => a - b;
 function compileTextTest(condition: DataTableFilterCondition, fold: (text: string) => string, caseSensitive?: boolean) {
   const { operator } = condition;
   if (operator === 'like') {
-    const pattern = globToRegExp(String(condition.value), caseSensitive);
-    return (actual: string) => pattern.test(actual);
+    return compileGlob(String(condition.value), caseSensitive);
   }
   const expected = fold(String(condition.value ?? ''));
   switch (operator) {
@@ -98,10 +116,11 @@ function compileText(condition: DataTableFilterCondition, caseSensitive?: boolea
   };
 }
 
-function compileNumber(condition: DataTableFilterCondition): ValueMatcher {
+function compileNumber(condition: DataTableFilterCondition): ValueMatcher | null {
   let test: (actual: number) => boolean;
   if (condition.operator === 'between') {
-    const [from, to] = condition.value as DataTableFilterRange;
+    if (!Array.isArray(condition.value)) return null;
+    const [from, to] = condition.value;
     const range: [number | null, number | null] = [
       from === null ? null : Number(from),
       to === null ? null : Number(to),
@@ -146,8 +165,12 @@ function compileScalar(
     case 'boolean':
       return (value) => matchBoolean(value, condition);
     case 'select':
-      if (condition.operator === 'equals')
-        return (value) => value === condition.value || String(value) === String(condition.value);
+      if (condition.operator === 'equals') {
+        // A value that is one of the declared options is an identity; anything else is typed text.
+        const exact = filter.caseSensitive || filter.options?.some((option) => option.value === condition.value);
+        const expected = foldText(String(condition.value), exact);
+        return (value) => value === condition.value || foldText(String(value), exact) === expected;
+      }
       return compileText(condition, filter.caseSensitive);
     case 'text':
       return compileText(condition, filter.caseSensitive);
@@ -187,7 +210,7 @@ function compileConditions(
 
 /**
  * Checks a value against one column's conditions: plain conditions are OR-ed, negated conditions are AND-ed.
- * Date conditions whose tokens can't be resolved are ignored.
+ * Date conditions whose tokens can't be resolved and malformed `between` conditions are ignored.
  */
 export function matchesFilterConditions(
   value: unknown,
@@ -203,6 +226,10 @@ export type DataTableFilterRecordsOptions<T> = {
    * Column definitions; their `filter` config and accessors decide how conditions apply.
    */
   columns: DataTableColumn<T>[];
+  /**
+   * The table's `defaultColumnProps`, when they carry a `filter`.
+   */
+  defaultColumnProps?: DataTableDefaultColumnProps<T>;
   filters?: DataTableFilters;
   lockedFilters?: DataTableFilters;
   /**
@@ -223,8 +250,8 @@ export type DataTableFilterRecordsOptions<T> = {
  * Filters records on the client. Returns the same array when nothing filters.
  */
 export function filterRecords<T>(records: T[], options: DataTableFilterRecordsOptions<T>): T[] {
-  const { columns, filters, lockedFilters, search, searchAccessors, now = new Date() } = options;
-  const configs = resolveColumnFilters(columns);
+  const { columns, defaultColumnProps, filters, lockedFilters, search, searchAccessors, now = new Date() } = options;
+  const configs = resolveColumnFilters(columns, defaultColumnProps);
   const checks: ((record: T) => boolean)[] = [];
 
   for (const set of [lockedFilters, filters]) {
@@ -268,7 +295,8 @@ export function getDateConditionRange(
   const period = (token: DataTableFilterScalar) => resolveDatePeriod(String(token), now, weekStartsOn);
   const last = (date: Date) => new Date(date.getTime() - 1);
   if (condition.operator === 'between') {
-    const [from, to] = condition.value as DataTableFilterRange;
+    if (!Array.isArray(condition.value)) return null;
+    const [from, to] = condition.value;
     const start = from === null ? null : period(from);
     const end = to === null ? null : period(to);
     if ((from !== null && !start) || (to !== null && !end)) return null;
@@ -314,9 +342,13 @@ function resolveDateCondition(
  */
 export function resolveFilters<T>(
   filters: DataTableFilters,
-  { columns, now = new Date() }: { columns: DataTableColumn<T>[]; now?: Date }
+  {
+    columns,
+    defaultColumnProps,
+    now = new Date(),
+  }: { columns: DataTableColumn<T>[]; defaultColumnProps?: DataTableDefaultColumnProps<T>; now?: Date }
 ): DataTableFilters {
-  const configs = resolveColumnFilters(columns);
+  const configs = resolveColumnFilters(columns, defaultColumnProps);
   return Object.fromEntries(
     Object.entries(filters)
       .map(([key, conditions]) => {

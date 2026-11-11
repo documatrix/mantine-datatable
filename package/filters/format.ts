@@ -87,7 +87,7 @@ export function formatFilterCondition(
   const formatScalar = (scalar: DataTableFilterScalar) => formatFilterValue(scalar, filter, context);
 
   if (operator === 'between') {
-    const [from, to] = (value ?? [null, null]) as DataTableFilterRange;
+    const [from, to] = (Array.isArray(value) ? value : [null, null]) as DataTableFilterRange;
     let text: string;
     const lastDays = isDate && to !== null && /^[+-]?0d$/.test(String(to)) && /^-\d+d$/.exec(String(from));
     if (lastDays) {
@@ -130,7 +130,10 @@ export function formatFilterCondition(
         ? ops.notEquals(filter.type === 'text' ? literal : formatted)
         : ops.equals(filter.type === 'text' ? literal : formatted);
     default: {
-      const text = (isDate ? texts.dateOperators[operator] : ops[operator])(formatted);
+      const format = (isDate ? texts.dateOperators[operator] : ops[operator]) as
+        | ((value: string) => string)
+        | undefined;
+      const text = format ? format(formatted) : `${operator} ${formatted}`;
       return negate ? ops.not(text) : text;
     }
   }

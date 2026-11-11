@@ -1,21 +1,8 @@
 import { useEffect, useState } from 'react';
+import { sanitizeFilters } from '../filters/sanitize';
 import type { DataTableFilterCondition, DataTableFilters } from '../types/DataTableFilter';
 
 export const EMPTY_FILTERS: DataTableFilters = {};
-
-export function isDataTableFilters(value: unknown): value is DataTableFilters {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
-  return Object.values(value).every(
-    (conditions) =>
-      Array.isArray(conditions) &&
-      conditions.every(
-        (condition) =>
-          typeof condition === 'object' &&
-          condition !== null &&
-          typeof (condition as { operator?: unknown }).operator === 'string'
-      )
-  );
-}
 
 /**
  * Drops keys without conditions.
@@ -36,8 +23,7 @@ function readStoredFilters(key: string | undefined, storage: Storage) {
   try {
     const raw = (storage === 'session' ? window.sessionStorage : window.localStorage).getItem(key);
     if (raw === null) return undefined;
-    const parsed: unknown = JSON.parse(raw);
-    return isDataTableFilters(parsed) ? parsed : undefined;
+    return sanitizeFilters(JSON.parse(raw));
   } catch {
     return undefined;
   }
@@ -46,9 +32,8 @@ function readStoredFilters(key: string | undefined, storage: Storage) {
 function writeStoredFilters(key: string | undefined, storage: Storage, filters: DataTableFilters) {
   if (!key || typeof window === 'undefined') return;
   try {
-    const target = storage === 'session' ? window.sessionStorage : window.localStorage;
-    if (Object.keys(filters).length) target.setItem(key, JSON.stringify(filters));
-    else target.removeItem(key);
+    // Empty filters are stored too: a missing item means "never set" and falls back to `defaultFilters`.
+    (storage === 'session' ? window.sessionStorage : window.localStorage).setItem(key, JSON.stringify(filters));
   } catch {
     // Storage can be full or disabled; filters still work for this session.
   }
@@ -92,10 +77,21 @@ export function useDataTableFilters({
     () => (getInitialValueInEffect ? undefined : readStoredFilters(storageKey, storage)) ?? defaultFilters
   );
 
+  const source = storageKey ? `${storage}:${storageKey}` : undefined;
+  const [loadedSource, setLoadedSource] = useState(source);
+  if (source !== loadedSource) {
+    setLoadedSource(source);
+    const stored = readStoredFilters(storageKey, storage);
+    // Filters made without a key are kept when one appears; switching between keys starts from the new key's state.
+    if (stored || (source && loadedSource)) setFiltersState(stored ?? defaultFilters);
+  }
+
   useEffect(() => {
     if (!getInitialValueInEffect) return;
     const stored = readStoredFilters(storageKey, storage);
-    if (stored) setFiltersState(stored);
+    if (stored) {
+      setFiltersState((current) => (JSON.stringify(current) === JSON.stringify(stored) ? current : stored));
+    }
   }, [getInitialValueInEffect, storageKey, storage]);
 
   const setFilters = (next: DataTableFilters | ((current: DataTableFilters) => DataTableFilters)) =>

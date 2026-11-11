@@ -25,7 +25,9 @@ const { data } = useQuery({
 
 <DataTable columns={columns} records={data?.records} filters={filters} onFiltersChange={setFilters} /* ... */ />`;
 
-const SQL_CODE = `for (const [column, conditions] of Object.entries(filters)) {
+const SQL_CODE = `import { toSqlLikePattern } from '${process.env.PACKAGE_NAME}/filters';
+
+for (const [column, conditions] of Object.entries(filters)) {
   for (const condition of conditions) {
     const pattern = toSqlLikePattern(condition); // contains / startsWith / endsWith / like
     if (pattern) where.push(sql\`\${column} \${condition.negate ? 'NOT ' : ''}LIKE \${pattern} ESCAPE '\\\\'\`);
@@ -152,7 +154,9 @@ export default async function ColumnFiltersExamplePage() {
         <Code>localStorage</Code> or <Code>sessionStorage</Code>. You can also manage <Code>filters</Code> yourself, or
         leave them uncontrolled with <Code>defaultFilters</Code> and react to <Code>onFiltersChange</Code>. In the
         browser, <Code>filterRecords</Code> applies filters, locked filters and an optional free-text{' '}
-        <Code>search</Code> to your records, as the example does.
+        <Code>search</Code> to your records, as the example does. If the table sets a <Code>filter</Code> in{' '}
+        <Code>defaultColumnProps</Code>, pass the same <Code>defaultColumnProps</Code> to <Code>filterRecords</Code> and{' '}
+        <Code>resolveFilters</Code>.
       </Txt>
       <PageSubtitle value="Filtering on a server" />
       <Txt>
@@ -182,7 +186,10 @@ export default async function ColumnFiltersExamplePage() {
           distinct values, like the Department column. Loaded labels are remembered for pills and chips.
         </li>
         <li>
-          Node backends can evaluate the payload directly with <Code>filterRecords</Code>.
+          On a server, import these helpers from <Code>{`${process.env.PACKAGE_NAME}/filters`}</Code>: that entry is not
+          a client module and loads no React or Mantine code, so route handlers, server components and Node backends can
+          call <Code>toSqlLikePattern</Code> or evaluate the payload directly with <Code>filterRecords</Code>. Pass
+          filters from a request or URL through <Code>sanitizeFilters</Code> first, which drops malformed conditions.
         </li>
       </UnorderedList>
       <CodeBlock code={SQL_CODE} language="ts" />

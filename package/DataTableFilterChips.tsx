@@ -24,9 +24,7 @@ type DataTableFilterChipsProps<T> = {
 
 export function DataTableFilterChips<T>({ columns, defaultColumnProps, colSpan }: DataTableFilterChipsProps<T>) {
   const { filters, lockedFilters, clearFilters, texts } = useDataTableFiltersContext();
-  const configs = resolveColumnFilters(
-    defaultColumnProps ? columns.map((column) => ({ ...defaultColumnProps, ...column }) as DataTableColumn<T>) : columns
-  );
+  const configs = resolveColumnFilters(columns, defaultColumnProps);
   const keys = [...configs.keys()];
   for (const key of [...Object.keys(lockedFilters ?? {}), ...Object.keys(filters)]) {
     if (!keys.includes(key)) keys.push(key);

@@ -47,6 +47,9 @@ const RANGE_VARIANTS: DataTableFilterOperator[] = ['equals', 'gt', 'gte', 'lt', 
 const sameCondition = (a: DataTableFilterCondition, b: DataTableFilterCondition) =>
   a.operator === b.operator && !!a.negate === !!b.negate && JSON.stringify(a.value) === JSON.stringify(b.value);
 
+const sameConditionText = (a: DataTableFilterCondition, b: DataTableFilterCondition) =>
+  a.operator === b.operator && !!a.negate === !!b.negate && String(a.value) === String(b.value);
+
 export type DataTableFilterInputApi = {
   setText: (text: string) => void;
 };
@@ -96,7 +99,7 @@ export function DataTableFilterInput({
   const loadOptions = useStableCallback(select?.loadOptions);
   const hasLoader = !!select?.loadOptions;
   const optionsLimit = select?.optionsLimit ?? 100;
-  const options = select ? mergeOptions(select.options, knownOptions[filter.key], loaded) : undefined;
+  const options = select ? mergeOptions(select.options, loaded, knownOptions[filter.key]) : undefined;
   const context = { texts, locale, options };
   const query = search.trim();
   const searchTerm = getFilterSearchTerm(query);
@@ -226,6 +229,8 @@ export function DataTableFilterInput({
   const error = parsed?.error && !suggestions.length ? parsed.error : undefined;
   const firstSuggestion = suggestions[0];
 
+  const suggestionsKey = suggestions.map((suggestion) => `${suggestion.id}:${suggestion.label}`).join('\n');
+
   // Keep the first suggestion selected while typing so Enter applies it. The store object changes identity
   // on every render, so depending on it would undo arrow-key navigation.
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
@@ -233,16 +238,40 @@ export function DataTableFilterInput({
     if (query && dropdownOpened) combobox.selectFirstOption();
   }, [query, dropdownOpened]);
 
+  // Mantine tracks the selection by index, so when the list changes (options load, "Show all") the index
+  // is pointed back at the highlighted option; Enter then applies what is highlighted.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the rendered list changes
+  useEffect(() => {
+    if (!query || !dropdownOpened || !combobox.listId) return;
+    const items = [...(document.getElementById(combobox.listId)?.querySelectorAll('[data-combobox-option]') ?? [])];
+    const index = items.findIndex((item) => item.hasAttribute('data-combobox-selected'));
+    if (index === -1) combobox.selectFirstOption();
+    else combobox.updateSelectedOptionIndex(index);
+  }, [suggestionsKey]);
+
   const stopEditing = () => {
     setEditingIndex(null);
     setSearch('');
   };
 
+  const isUnedited = () => editing !== null && search === conditionToText(conditions[editing], filter, options);
+
   const commit = (suggestion: Suggestion | undefined) => {
     if (!suggestion) return;
+    // Re-parsing unchanged text can change the value type (`'5'` to `5`); that alone is not an edit.
+    if (
+      editing !== null &&
+      suggestion.conditions.length === 1 &&
+      sameConditionText(suggestion.conditions[0], conditions[editing]) &&
+      isUnedited()
+    ) {
+      stopEditing();
+      return;
+    }
     const added = suggestion.conditions.filter((s) => !isActive(s));
     if (editing !== null) {
-      onChange([...conditions.slice(0, editing), ...added, ...conditions.slice(editing + 1)]);
+      const next = [...conditions.slice(0, editing), ...added, ...conditions.slice(editing + 1)];
+      if (next.length !== conditions.length || next.some((c, i) => !sameCondition(c, conditions[i]))) onChange(next);
     } else if (suggestion.toggle && suggestion.checked) {
       onChange(conditions.filter((c) => !suggestion.conditions.some((s) => sameCondition(c, s))));
     } else if (added.length) {
@@ -291,6 +320,10 @@ export function DataTableFilterInput({
 
   const handleBlur = () => {
     combobox.closeDropdown();
+    if (isUnedited()) {
+      stopEditing();
+      return;
+    }
     const typed = parsed && !parsed.error ? parsed.conditions : [];
     // A select keeps partial text that still matches options, as committing it would add a custom value;
     // a value no option matches is committed like on Enter.

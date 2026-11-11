@@ -1,5 +1,5 @@
-import { isValidElement } from 'react';
 import type { DataTableColumn } from '../types/DataTableColumn';
+import type { DataTableDefaultColumnProps } from '../types/DataTableDefaultColumnProps';
 import type {
   DataTableColumnFilter,
   DataTableDatePreset,
@@ -35,7 +35,7 @@ export function isColumnFilterConfig<T>(filter: DataTableColumn<T>['filter']): f
   return (
     typeof filter === 'object' &&
     filter !== null &&
-    !isValidElement(filter) &&
+    !('$$typeof' in filter) &&
     !(Symbol.iterator in filter) &&
     !('then' in filter) &&
     typeof (filter as { type?: unknown }).type === 'string'
@@ -48,8 +48,13 @@ function getDefaultOperator(type: DataTableFilterType, operators: DataTableFilte
   return operators.find((operator) => operator !== 'between' && operator !== 'empty') ?? preferred;
 }
 
-export function resolveColumnFilter<T>(column: DataTableColumn<T>): DataTableResolvedFilter<T> | undefined {
-  const { filter, accessor, title } = column;
+export function resolveColumnFilter<T>(
+  column: DataTableColumn<T>,
+  defaultColumnProps?: DataTableDefaultColumnProps<T>
+): DataTableResolvedFilter<T> | undefined {
+  const { filter, accessor, title } = defaultColumnProps
+    ? ({ ...defaultColumnProps, ...column } as DataTableColumn<T>)
+    : column;
   if (!isColumnFilterConfig(filter)) return undefined;
   const accessorString = String(accessor);
   const operators = filter.operators ?? DEFAULT_OPERATORS[filter.type];
@@ -63,10 +68,13 @@ export function resolveColumnFilter<T>(column: DataTableColumn<T>): DataTableRes
   } as DataTableResolvedFilter<T>;
 }
 
-export function resolveColumnFilters<T>(columns: DataTableColumn<T>[]) {
+export function resolveColumnFilters<T>(
+  columns: DataTableColumn<T>[],
+  defaultColumnProps?: DataTableDefaultColumnProps<T>
+) {
   const map = new Map<string, DataTableResolvedFilter<T>>();
   for (const column of columns) {
-    const resolved = resolveColumnFilter(column);
+    const resolved = resolveColumnFilter(column, defaultColumnProps);
     if (resolved && !map.has(resolved.key)) map.set(resolved.key, resolved);
   }
   return map;
@@ -86,6 +94,9 @@ export function getFallbackFilter(key: string): DataTableResolvedFilter {
   };
 }
 
+/**
+ * Merges option lists; the first entry per value wins, so pass the most current list first.
+ */
 export function mergeOptions(...lists: (DataTableFilterOption[] | undefined)[]) {
   const seen = new Set<string>();
   const merged: DataTableFilterOption[] = [];

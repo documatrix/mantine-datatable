@@ -63,6 +63,16 @@
         "default": "./dist/dates.js"
       }
     },
+    "./filters": {
+      "import": {
+        "types": "./dist/filters.d.mts",
+        "default": "./dist/filters.mjs"
+      },
+      "require": {
+        "types": "./dist/filters.d.ts",
+        "default": "./dist/filters.js"
+      }
+    },
     "./styles.css": "./dist/styles.css",
     "./styles.layer.css": "./dist/styles.layer.css"
   },
