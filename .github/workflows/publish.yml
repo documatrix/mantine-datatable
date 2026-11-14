@@ -1,10 +1,8 @@
 name: Publish to npm
 
 on:
-  # Called by release-please.yml when a release is created
-  workflow_call:
-
-  # Allows you to run this workflow manually from the Actions tab
+  # Dispatched by release-please.yml on the release tag when a release is created;
+  # can also be run manually from the Actions tab
   workflow_dispatch:
 
 # Least privilege at the top level; jobs opt into more as needed
