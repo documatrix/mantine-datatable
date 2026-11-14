@@ -197,6 +197,8 @@ tr[data-selected] td[data-pinned] {
     content: '';
     position: absolute;
     inset: 0;
+    /* Below the cell content; the pinned cell's own z-index keeps it above the cell background. */
+    z-index: -1;
     background: var(--mantine-datatable-selection-color);
   }
 }
