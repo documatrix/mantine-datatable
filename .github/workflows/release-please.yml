@@ -16,6 +16,7 @@ jobs:
       pull-requests: write # create and update the release PR
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - name: Run release-please
         id: release
@@ -24,13 +25,21 @@ jobs:
   # Releases created by release-please use the workflow's GITHUB_TOKEN, which
   # deliberately does not trigger `release:` workflows — so publishing and docs
   # deployment are chained here explicitly instead.
+  #
+  # npm Trusted Publishing only accepts the workflow a run was started from, so
+  # publish.yml is dispatched as its own run instead of being called from here.
   publish:
     needs: release-please
     if: needs.release-please.outputs.releases_created == 'true'
-    uses: ./.github/workflows/publish.yml
+    runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write
+      actions: write # dispatch publish.yml
+    steps:
+      - name: Dispatch publish workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
+        run: gh workflow run publish.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG_NAME"
 
   deploy-docs:
     needs: release-please
